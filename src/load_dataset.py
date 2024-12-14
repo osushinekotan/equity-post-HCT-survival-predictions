@@ -4,7 +4,7 @@ import rootutils
 
 rootutils.setup_root(search_from=".", dotenv=True, pythonpath=True)
 
-from cibmtr.kaggle_utils.dataset import download_kaggle_competition_dataset
+from src.kaggle_utils.dataset import download_kaggle_competition_dataset
 
 kaggle_client = kaggle.KaggleApi()
 kaggle_client.authenticate()
