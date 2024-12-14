@@ -20,11 +20,13 @@ def single_train_fn(
     eval_fn: None = None,
     train_folds: list[int] | None = None,
     overwrite: bool = False,
+    **kwargs,
 ) -> tuple[pl.DataFrame, dict[str, float], list[BaseWrapper]]:
     va_records, va_scores, trained_models = [], {}, []
     out_dir = Path(out_dir) / model.name
 
     train_folds = train_folds or features_df[fold_col].unique().to_list()
+    use_eval_metric_extra_va_df = kwargs.get("use_eval_metric_extra_va_df", False)
 
     for i_fold in train_folds:
         logger.info(f"🚀 >>> Start training fold {i_fold} =============")
@@ -36,6 +38,9 @@ def single_train_fn(
         va_y = va_df[target_col].to_numpy()
 
         i_out_dir = out_dir / f"fold_{i_fold:02}"
+
+        if use_eval_metric_extra_va_df:
+            model.params["eval_metric"].va_df = va_df
 
         if model.get_save_path(out_dir=i_out_dir).exists() and not overwrite:
             model.load(out_dir=i_out_dir)
