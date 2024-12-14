@@ -7,6 +7,14 @@ requires-python = ">=3.11"
 dependencies = [
     "fire>=0.7.0",
     "kaggle>=1.6.17",
+    "lifelines>=0.30.0",
+    "lightgbm>=4.5.0",
+    "numpy>=1.26.4",
+    "polars>=1.17.1",
+    "scikit-learn>=1.3.2",
+    "scikit-survival>=0.22.2",
+    "torch>=2.5.1",
+    "xgboost>=2.1.3",
 ]
 
 [tool.uv]
@@ -41,6 +49,7 @@ lint.ignore = [
     "E501",  # line too long
     "E402",  # module level import not at top of file
     "N806",  # variable in function should be lowercase
+    "N803",  # argument name should be lowercase
 ]
 
 [tool.ruff.lint.per-file-ignores]
