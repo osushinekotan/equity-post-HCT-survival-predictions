@@ -4,6 +4,7 @@ from pathlib import Path
 import polars as pl
 
 from src.model.sklearn_like import BaseWrapper
+from src.model.visualization import plot_feature_importance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -27,6 +28,7 @@ def single_train_fn(
 
     train_folds = train_folds or features_df[fold_col].unique().to_list()
     use_eval_metric_extra_va_df = kwargs.get("use_eval_metric_extra_va_df", False)
+    enable_plot_feature_importance = kwargs.get("enable_plot_feature_importance", True)
 
     for i_fold in train_folds:
         logger.info(f"🚀 >>> Start training fold {i_fold} =============")
@@ -40,7 +42,7 @@ def single_train_fn(
         i_out_dir = out_dir / f"fold_{i_fold:02}"
 
         if use_eval_metric_extra_va_df:
-            model.params["eval_metric"].va_df = va_df
+            model.eval_metric.va_df = va_df
 
         if model.get_save_path(out_dir=i_out_dir).exists() and not overwrite:
             model.load(out_dir=i_out_dir)
@@ -80,5 +82,25 @@ def single_train_fn(
     score = eval_fn(input_df=va_result_df)
     va_scores[f"{eval_fn.__name__}_full"] = score
     logger.info(f"✅ Final {eval_fn.__name__}: {score}")
+
+    # plot feature importance
+    if enable_plot_feature_importance:
+        import pandas as pd
+
+        importance_df = pd.DataFrame()
+        for i, m in enumerate(trained_models):
+            i_df = pd.DataFrame(
+                {"feature_importance": m.feature_importances_, "feature_name": m.feature_names, "fold": i}
+            )
+            importance_df = pd.concat([importance_df, i_df], axis=0, ignore_index=True)
+
+        fig = plot_feature_importance(
+            df=importance_df,
+            feature_name_col="feature_name",
+            feature_importance_col="feature_importance",
+            fold_col="fold",
+            top_k=50,
+        )
+        fig.savefig(out_dir / "feature_importance.png", dpi=300)
 
     return va_result_df, va_scores, trained_models
