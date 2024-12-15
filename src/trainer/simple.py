@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -102,5 +103,10 @@ def single_train_fn(
             top_k=50,
         )
         fig.savefig(out_dir / "feature_importance.png", dpi=300)
+
+    with open(out_dir / "va_scores.json", "w") as f:
+        json.dump(va_scores, f, indent=4)
+
+    va_result_df.write_csv(out_dir / "va_result.csv")
 
     return va_result_df, va_scores, trained_models
