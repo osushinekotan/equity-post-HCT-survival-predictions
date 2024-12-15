@@ -5,6 +5,11 @@ dotenv.load_dotenv()
 ENVIRONMENT = "local"
 EXPERIMENT = "001"
 
+
+N_SPLITS = 4
+SEED = 42
+
+
 if ENVIRONMENT == "local":
     import rootutils
 

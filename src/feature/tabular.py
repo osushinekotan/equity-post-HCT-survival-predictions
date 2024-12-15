@@ -3,6 +3,7 @@ from itertools import combinations
 
 import numpy as np
 import polars as pl
+from tqdm import tqdm
 
 
 class BaseEncoder:
@@ -276,3 +277,32 @@ class StringCombinationEncoder(BaseEncoder):
             return new_df.select(generated_cols)
 
         return new_df
+
+
+class CatColumnCombinations:
+    new_cols = set()
+
+    def __call__(self, input_df: pl.DataFrame, include_cols: list[str], r: int = 2) -> pl.DataFrame:
+        # Validate inputs
+        if not include_cols:
+            self.new_cols = list(self.new_cols)
+            return input_df
+
+        if not include_cols or r <= 0 or r > len(include_cols):
+            raise ValueError("Invalid combination parameters.")
+
+        output_df = input_df.clone()
+
+        # Generate all combinations of columns
+        col_combinations = list(combinations(include_cols, r))
+
+        # Add each combination as a new column in the DataFrame
+        for comb in tqdm(col_combinations):
+            new_col = "+".join(comb)
+            output_df = output_df.with_columns(
+                pl.concat_str([pl.col(x).fill_null("NULL").cast(pl.String) for x in comb]).alias(new_col)
+            )
+            self.new_cols.add(new_col)
+
+        self.new_cols = sorted(list(self.new_cols))
+        return output_df
