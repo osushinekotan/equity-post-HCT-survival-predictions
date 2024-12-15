@@ -50,6 +50,14 @@ class LightGBMWapper(BaseWrapper):
         self.fit_params = fit_params or {}
         self.fitted = False
 
+        self.params = self.model.get_params()
+        self.eval_metric = self.params.get("eval_metric")
+
+    def initialize(self) -> None:
+        params = copy.deepcopy(self.params)
+        params["eval_metric"] = self.eval_metric
+        self.model = LGBMModel
+
     def reshape_y(self, y: NDArray) -> NDArray:
         if y.ndim == 1:
             return y
@@ -58,6 +66,7 @@ class LightGBMWapper(BaseWrapper):
         return y
 
     def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+        self.initialize()
         self.model.fit(
             tr_x,
             self.reshape_y(tr_y),
@@ -96,9 +105,11 @@ class XGBoostRegressorWrapper(BaseWrapper):
         self.feature_names = feature_names
 
         self.params = self.model.get_params()
+        self.eval_metric = self.params.get("eval_metric")
 
     def initialize(self) -> None:
         params = copy.deepcopy(self.params)
+        params["eval_metric"] = self.eval_metric
 
         if self.early_stopping_params:
             # 同じ instance だとバグるので initialize する
