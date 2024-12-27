@@ -9,10 +9,13 @@
   "enable_tpu": "false",
   "enable_internet": "false",
   "dataset_sources": [
-    "mst8823/equity-post-HCT-survival-predictionsc-codes",
-    "mst8823/equity-post-HCT-survival-predictions-artifacts"
+    "mst8823/equity-post-HCT-survival-predictions-codes"
   ],
   "competition_sources": ["equity-post-HCT-survival-predictions"],
-  "kernel_sources": ["mst8823/equity-post-HCT-survival-predictions-deps"],
-  "model_sources": []
+  "kernel_sources": [
+    "mst8823/equity-post-HCT-survival-predictions-deps"
+  ],
+  "model_sources": [
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/001/1"
+  ]
 }
