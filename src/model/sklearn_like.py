@@ -44,19 +44,20 @@ class LightGBMWapper(BaseWrapper):
         name: str = "lgb",
         model: LGBMModel | None = None,
         fit_params: dict[str, Any] | None = None,
+        feature_names: list[str] | None = None,
     ):
         self.name = name
         self.model = model or LGBMModel()
         self.fit_params = fit_params or {}
         self.fitted = False
+        self.feature_names = feature_names or self.fit_params.get("feature_name")
 
         self.params = self.model.get_params()
-        self.eval_metric = self.params.get("eval_metric")
+        self.eval_metric = self.fit_params.get("eval_metric")
 
     def initialize(self) -> None:
         params = copy.deepcopy(self.params)
-        params["eval_metric"] = self.eval_metric
-        self.model = LGBMModel
+        self.model = LGBMModel(**params)
 
     def reshape_y(self, y: NDArray) -> NDArray:
         if y.ndim == 1:

@@ -106,3 +106,37 @@ class XGBMetric:
     @property
     def __name__(self) -> str:
         return self._name
+
+
+class LGBMMetric:
+    def __init__(
+        self,
+        event_label: str = "efs",
+        interval_label: str = "efs_time",
+        group_label: str = "race_group",
+        name: str | None = None,
+    ):
+        self.va_df: pl.DataFrame | None = None
+        self.event_label = event_label
+        self.interval_label = interval_label
+        self.group_label = group_label
+        self._name = name or self.__class__.__name__
+
+    def __call__(self, y_true, y_pred) -> tuple[str, float, bool]:
+        assert self.va_df is not None, "va_df is not set"
+
+        if len(y_true) != len(self.va_df):
+            # training phase, return neutral score
+            return self._name, 0.0, False
+
+        y_time = self.va_df[self.interval_label].to_numpy()
+        y_event = self.va_df[self.event_label].to_numpy()
+        race_group = self.va_df[self.group_label].to_numpy()
+        score = metric(y_time=y_time, y_event=y_event, y_pred=y_pred, race_group=race_group)
+
+        # LightGBM requires the metric to return (name, value, is_higher_better)
+        return self._name, score, True  # True if higher is better
+
+    @property
+    def __name__(self) -> str:
+        return self._name
