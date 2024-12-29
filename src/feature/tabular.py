@@ -1,8 +1,12 @@
 import abc
+from collections.abc import Iterable
 from itertools import combinations
+from typing import Any
 
 import numpy as np
 import polars as pl
+import shirokumas as sk
+from sklearn.model_selection import BaseCrossValidator, KFold
 from tqdm import tqdm
 
 
@@ -306,3 +310,51 @@ class CatColumnCombinations:
 
         self.new_cols = sorted(list(self.new_cols))
         return output_df
+
+
+class TargetEncoder(BaseEncoder):
+    def __init__(
+        self,
+        x_columns: list[str],
+        y_column: str,
+        folds: Iterable | BaseCrossValidator | None = None,
+        folds_params: dict[str, Any] | None = None,
+        smoothing_method: str = "none",
+        smoothing_params: dict[str, Any] | None = None,
+        prefix: str = "f_",
+    ) -> None:
+        sk._target._UNKNOWN_VALUE = -1.0
+        sk._target._MISSING_VALUE = -2.0
+
+        self.x_columns = x_columns
+        self.y_column = y_column
+        self.fitted = False
+        self.prefix = prefix
+
+        if folds is None:
+            folds = KFold(n_splits=5, shuffle=True, random_state=42)
+
+        self.encoder = sk.TargetEncoder(
+            folds=folds,
+            folds_params=folds_params,
+            smoothing_method=smoothing_method,
+            smoothing_params=smoothing_params,
+        )
+
+    def fit(self, df: pl.DataFrame) -> None:
+        self.encoder.fit(X=df.select(self.x_columns), y=df[self.y_column])
+        self.fitted = True
+
+    @property
+    def new_colname_mapping(self):
+        mapping = {col: f"{self.prefix}te_by_{self.y_column}_{col}" for col in self.x_columns}
+        return mapping
+
+    def transform(self, df: pl.DataFrame) -> pl.DataFrame:
+        if not self.fitted:
+            raise ValueError("fit() method should be called before transform()")
+
+        out_df = self.encoder.transform(df.select(self.x_columns))
+        out_df = out_df.rename(self.new_colname_mapping)
+
+        return out_df
