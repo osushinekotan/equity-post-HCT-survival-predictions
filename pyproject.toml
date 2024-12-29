@@ -15,6 +15,7 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "scikit-survival>=0.23.1",
     "seaborn>=0.13.2",
+    "shirokumas>=0.0.4",
     "xgboost>=2.1.3",
 ]
 

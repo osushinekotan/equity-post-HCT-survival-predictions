@@ -331,6 +331,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scikit-survival" },
     { name = "seaborn" },
+    { name = "shirokumas" },
     { name = "xgboost" },
 ]
 
@@ -356,6 +357,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "scikit-survival", specifier = ">=0.23.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "shirokumas", specifier = ">=0.0.4" },
     { name = "xgboost", specifier = ">=2.1.3" },
 ]
 
@@ -1646,6 +1648,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/86/59/a451d7420a77ab0b98f7affa3a1d78a313d2f7281a57afb1a34bae8ab412/seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7", size = 1457696 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987", size = 294914 },
+]
+
+[[package]]
+name = "shirokumas"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "polars" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/d5/db4759a99a8283f36cfd430b2703b84bd16c5acea5452c361d8741a17411/shirokumas-0.0.4.tar.gz", hash = "sha256:e5f2bf8ec1f913b0db688e08cd3a8574b0666ebdb1da87fae784b4ae8611bcd1", size = 19398 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/3c/518e4f2a9866e4a875ed1ba9618d234a086195b7c03c3a267a4b7ef4f1b7/shirokumas-0.0.4-py3-none-any.whl", hash = "sha256:dabf79e8ec3aee06609cc51928f8829b8f422e8b4b6369049658c8c1ed19dcc9", size = 13018 },
 ]
 
 [[package]]
