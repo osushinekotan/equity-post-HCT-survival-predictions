@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from itertools import combinations
 from typing import Any
 
+import category_encoders as ce
 import numpy as np
 import polars as pl
 from sklearn.model_selection import BaseCrossValidator, KFold
@@ -24,6 +25,28 @@ class BaseEncoder:
     def fit_transform(self, df: pl.DataFrame) -> pl.DataFrame:
         self.fit(df)
         return self.transform(df)
+
+
+class OrdinalEncoder(BaseEncoder):
+    def __init__(self, columns: list[str], prefix: str = "f_") -> None:
+        self.columns = columns
+        self.fitted = False
+        self.prefix = prefix
+
+        self.encoder = ce.OrdinalEncoder()
+
+    def fit(self, df: pl.DataFrame) -> None:
+        self.encoder.fit(df.select(self.columns).to_pandas())
+        self.fitted = True
+
+    def transform(self, df: pl.DataFrame) -> pl.DataFrame:
+        if not self.fitted:
+            raise ValueError("fit() method should be called before transform()")
+
+        return pl.DataFrame(
+            self.encoder.transform(df.select(self.columns).to_pandas()),
+            schema=self.columns,
+        ).select(pl.all().name.prefix(self.prefix))
 
 
 class AggregateEncoder(BaseEncoder):
