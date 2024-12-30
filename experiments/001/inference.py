@@ -1,14 +1,9 @@
-import logging
-
 import config
 import polars as pl
 
 from src.feature.tabular import RawEncoder
 from src.model.sklearn_like import LightGBMWapper
 from src.trainer.tabular.simple import single_inference_fn
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 raw_train_df = pl.read_csv(config.COMP_DATASET_DIR / "train.csv").with_columns(
     pl.lit("TRAIN").alias(config.DATASET_COL),
@@ -57,8 +52,8 @@ features_df = pl.concat(
 feature_names = sorted([x for x in features_df.columns if x.startswith(config.FEATURE_PREFIX)])
 cat_features = [x for x in feature_names if x.startswith(f"{config.FEATURE_PREFIX}c_")]
 
-logger.info(f"# of features: {len(feature_names)}")
-logger.info(f"# of cat_features: {len(cat_features)}")
+print(f"# of features: {len(feature_names)}")
+print(f"# of cat_features: {len(cat_features)}")
 
 
 test_preds = single_inference_fn(
@@ -68,6 +63,10 @@ test_preds = single_inference_fn(
     model_dir=config.ARTIFACT_EXP_DIR(),
     inference_folds=list(range(config.N_SPLITS)),
 )
+print(config.ARTIFACT_EXP_DIR(), config.ARTIFACT_EXP_DIR().exists())
+print(test_preds)
+
+
 features_df.select(config.ID_COL).with_columns(pl.Series("prediction", test_preds)).write_csv(
     config.OUTPUT_DIR / "submission.csv"
 )
