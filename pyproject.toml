@@ -5,6 +5,7 @@ description = "kaggle competition: equity-post-HCT-survival-predictions"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "category-encoders>=2.6.4",
     "kaggle>=1.6.17",
     "kagglehub>=0.3.6",
     "lifelines>=0.30.0",
