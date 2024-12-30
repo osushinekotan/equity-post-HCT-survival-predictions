@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 
 from src.model.sklearn_like import BaseWrapper
@@ -110,3 +111,36 @@ def single_train_fn(
     va_result_df.write_csv(out_dir / "va_result.csv")
 
     return va_result_df, va_scores, trained_models
+
+
+def single_inference_fn(
+    model: BaseWrapper,
+    features_df: pl.DataFrame,
+    feature_names: list[str],
+    model_dir: str | Path,
+    inference_folds: list[int],
+) -> pl.DataFrame:
+    te_preds = []
+    model_dir = Path(model_dir) / model.name
+    for i_fold in inference_folds:
+        logger.info(f"🚀 >>> Start training fold {i_fold} =============")
+
+        te_x = features_df.select(feature_names).to_numpy()
+        i_out_dir = Path(model_dir) / f"fold_{i_fold:02}"
+
+        try:
+            model.load(out_dir=i_out_dir)
+            logger.info("   - ✅ Successfully loaded model")
+
+            te_pred = model.predict(te_x)
+            try:
+                if te_pred.shape[1] == 1:
+                    te_pred = te_pred.reshape(-1)
+            except IndexError:
+                pass
+            te_preds.append(te_pred)
+        except Exception as e:
+            logger.error(f"   - ❌ Failed to load model: {e}")
+
+    te_pred_ave = np.mean(te_preds, axis=0)
+    return te_pred_ave
