@@ -5,7 +5,6 @@ from typing import Any
 
 import numpy as np
 import polars as pl
-import shirokumas as sk
 from sklearn.model_selection import BaseCrossValidator, KFold
 from tqdm import tqdm
 
@@ -323,6 +322,8 @@ class TargetEncoder(BaseEncoder):
         smoothing_params: dict[str, Any] | None = None,
         prefix: str = "f_",
     ) -> None:
+        import shirokumas as sk
+
         sk._target._UNKNOWN_VALUE = -1.0
         sk._target._MISSING_VALUE = -2.0
 
