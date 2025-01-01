@@ -16,7 +16,7 @@ def single_train_fn(
     model: BaseWrapper,
     features_df: pl.DataFrame,
     feature_cols: list[str],
-    target_col: str,
+    target_col: str | list[str],
     meta_cols: list[str],
     fold_col: str | Path = "fold",
     out_dir: str | Path = "./outputs",
