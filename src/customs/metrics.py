@@ -140,3 +140,50 @@ class LGBMMetric:
     @property
     def __name__(self) -> str:
         return self._name
+
+
+class CatBoostMetric:
+    def __init__(
+        self,
+        event_label: str = "efs",
+        interval_label: str = "efs_time",
+        group_label: str = "race_group",
+        name: str | None = None,
+    ):
+        self.va_df: pl.DataFrame | None = None
+        self.event_label = event_label
+        self.interval_label = interval_label
+        self.group_label = group_label
+        self._name = name or self.__class__.__name__
+
+    def get_final_error(self, error, weight):  # type: ignore
+        return error
+
+    def is_max_optimal(self):  # type: ignore
+        return True
+
+    def evaluate(self, approxes, targets, weight):  # type: ignore
+        # approxes: 予測値 (shape: [ターゲット数, サンプル数])
+        # targets: 実際の値 (shape: [ターゲット数, サンプル数])
+        # weight: サンプルごとの重み (Noneも可)
+
+        assert self.va_df is not None, "va_df is not set"
+
+        # approxes は [ターゲット数, サンプル数] だが、1次元の配列を想定して np.array を適用
+        preds = np.array(approxes[0])
+        target = np.array(targets)
+
+        if len(target) != len(self.va_df):
+            return 0.0, 1
+
+        # va_df から必要な情報を抽出
+        y_time = self.va_df[self.interval_label].to_numpy()
+        y_event = self.va_df[self.event_label].to_numpy()
+        race_group = self.va_df[self.group_label].to_numpy()
+
+        score = metric(y_time=y_time, y_event=y_event, y_pred=preds, race_group=race_group)
+
+        return score, 1
+
+    def get_custom_metric_name(self) -> str:
+        return self._name
