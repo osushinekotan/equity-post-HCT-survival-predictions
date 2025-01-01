@@ -55,6 +55,7 @@ class AggregateEncoder(BaseEncoder):
         group_keys: list[str] | str,
         agg_exprs: list[pl.Expr],
         prefix: str = "f_",
+        extra_transforms: dict[str, dict[str, str]] | None = None,
     ) -> None:
         """aggregate numerical columns by group keys
 
@@ -63,11 +64,29 @@ class AggregateEncoder(BaseEncoder):
             agg_exprs (list[pl.Expr]): list of aggregation expressions (e.g. pl.col("colname").mean().alias("mean_colname"))
                 - set alias as the output column name
                 - `agg_{expr_alias}_{group_key_name}` will be used as the output column name
+            prefix (str, optional): prefix of the output column name. Defaults to "f_".
+            extra_transforms (dict[str, dict[str, str]] | None, optional): extra transformation methods to apply. Defaults to None.
+
+        Example:
+        ```
+        encoder = AggregateEncoder(
+            group_keys="category",
+            agg_exprs=[pl.col("val").mean().alias("mean_val"), pl.col("val").std().alias("std_val")],
+            prefix="f_",
+            extra_transforms={
+                "z-score": {
+                    "val": "val",
+                    "mean": "mean_val",
+                    "std": "std_val",
+                },
+            },
+        )
+        ```
         """
         self.group_keys = group_keys
         self.agg_exprs = agg_exprs
         self.prefix = prefix
-
+        self.extra_transforms = extra_transforms or {}
         self.mapping_df: pl.DataFrame | None = None
         self.fitted = False
 
@@ -102,11 +121,72 @@ class AggregateEncoder(BaseEncoder):
     def transform(self, df: pl.DataFrame) -> pl.DataFrame:
         if not self.fitted:
             raise ValueError("fit() method should be called before transform()")
-        return (
-            df.join(self.mapping_df, on=self.group_keys, how="left")
-            .select(list(self.aggregated_colnames.values()))
-            .select(pl.all().name.prefix(self.prefix))
-        )
+
+        base_df = df.join(self.mapping_df, on=self.group_keys, how="left")
+        if not self.extra_transforms:
+            return base_df.select(list(self.aggregated_colnames.values())).select(pl.all().name.prefix(self.prefix))
+
+        out_cols = list(self.aggregated_colnames.values())
+        for method, _agg_names in self.extra_transforms.items():
+            if method == "z-score":
+                assert sorted(list(_agg_names.keys())) == sorted(["val", "mean", "std"])
+                extra_colname = f"{method}_{_agg_names['val']}"
+                base_df = base_df.with_columns(
+                    (
+                        (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["mean"]]))
+                        / pl.col(self.aggregated_colnames[_agg_names["std"]])
+                    ).alias(extra_colname)
+                )
+                out_cols.append(extra_colname)
+            elif method == "med-abs-dev":
+                assert sorted(list(_agg_names.keys())) == sorted(["val", "median"])
+                extra_colname = f"{method}_{_agg_names['val']}"
+                base_df = base_df.with_columns(
+                    (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["median"]]))
+                    .abs()
+                    .alias(extra_colname)
+                )
+                out_cols.append(extra_colname)
+
+            elif method == "mean-diff":
+                assert sorted(list(_agg_names.keys())) == sorted(["val", "mean"])
+                extra_colname = f"{method}_{_agg_names['val']}"
+                base_df = base_df.with_columns(
+                    (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["mean"]])).alias(
+                        extra_colname
+                    )
+                )
+                out_cols.append(extra_colname)
+
+            elif method == "median-diff":
+                assert sorted(list(_agg_names.keys())) == sorted(["val", "median"])
+                extra_colname = f"{method}_{_agg_names['val']}"
+                base_df = base_df.with_columns(
+                    (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["median"]])).alias(
+                        extra_colname
+                    )
+                )
+                out_cols.append(extra_colname)
+
+            elif method == "mean-ratio":
+                assert sorted(list(_agg_names.keys())) == sorted(["val", "mean"])
+                extra_colname = f"{method}_{_agg_names['val']}"
+                base_df = base_df.with_columns(
+                    (pl.col(_agg_names["val"]) / pl.col(self.aggregated_colnames[_agg_names["mean"]])).alias(
+                        extra_colname
+                    )
+                )
+                out_cols.append(extra_colname)
+
+            elif method == "range":  # (max- min)
+                assert sorted(list(_agg_names.keys())) == sorted(["min", "max"])
+                extra_colname = f"{method}_{_agg_names['max']}_{_agg_names['min']}"
+                base_df = base_df.with_columns(
+                    (pl.col(_agg_names["max"]) - pl.col(_agg_names["min"])).alias(extra_colname)
+                )
+                out_cols.append(extra_colname)
+
+        return base_df.select(out_cols).select(pl.all().name.prefix(self.prefix))
 
     def fit_transform(self, df: pl.DataFrame) -> pl.DataFrame:
         self.fit(df)
