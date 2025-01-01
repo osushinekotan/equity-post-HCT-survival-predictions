@@ -5,13 +5,14 @@ description = "kaggle competition: equity-post-HCT-survival-predictions"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "catboost>=1.2.7",
     "category-encoders>=2.6.4",
     "kaggle>=1.6.17",
     "kagglehub>=0.3.6",
     "lifelines>=0.30.0",
     "lightgbm>=4.5.0",
     "nbformat>=5.10.4",
-    "polars>=1.17.1",
+    "polars[plot]>=1.17.1",
     "pyarrow>=18.1.0",
     "scikit-learn>=1.5.2",
     "scikit-survival>=0.23.1",
