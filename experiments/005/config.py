@@ -3,7 +3,7 @@ from pathlib import Path
 
 EXP_NAME = "005"
 
-N_SPLITS = 7
+N_SPLITS = 10
 SEED = 42
 
 
