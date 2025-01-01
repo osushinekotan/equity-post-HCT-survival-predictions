@@ -5,6 +5,7 @@ from typing import Any
 import joblib
 import polars as pl
 import xgboost as xgb
+from catboost import CatBoostRegressor
 from lightgbm import LGBMModel
 from numpy.typing import NDArray
 from xgboost import XGBRegressor
@@ -160,3 +161,88 @@ class XGBoostRegressorWrapper(BaseWrapper):
     @property
     def feature_importances_(self) -> Any:
         return self.model.feature_importances_
+
+
+class CatBoostRegressorWrapper(BaseWrapper):
+    # https://catboost.ai/docs/en/concepts/python-reference_catboostregressor
+    def __init__(
+        self,
+        name: str = "cat",
+        model: CatBoostRegressor | None = None,
+        fit_params: dict[str, Any] | None = None,
+        feature_names: list[str] | None = None,
+        cat_features: list[int] | None = None,
+        multi_output: bool = False,
+    ):
+        self.name = name
+        self.model = model or CatBoostRegressor()
+        self.fit_params = fit_params or {}
+        self.fitted = False
+        self.feature_names = feature_names
+        self.cat_features = cat_features
+        if self.cat_features:
+            self.fit_params["cat_features"] = self.cat_features
+
+        self.model.set_feature_names(feature_names)
+        self.eval_metric = self.model.get_params().get("eval_metric")
+
+        self.loss_function = self.model.get_params().get("loss_function")
+        self.multi_output = multi_output
+
+    def initialize(self) -> None:
+        params = copy.deepcopy(self.model.get_params())
+        params["eval_metric"] = self.eval_metric
+        self.model = CatBoostRegressor(**params)
+
+    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+        self.initialize()
+        if self.cat_features:
+            tr_x = (
+                pl.DataFrame(tr_x, schema=self.feature_names)
+                .cast({x: pl.String for x in self.cat_features})
+                .cast({x: pl.Categorical for x in self.cat_features})
+                .to_pandas()
+            )
+            va_x = (
+                pl.DataFrame(va_x, schema=self.feature_names)
+                .cast({x: pl.String for x in self.cat_features})
+                .cast({x: pl.Categorical for x in self.cat_features})
+                .to_pandas()
+            )
+
+        self.model.fit(
+            tr_x,
+            tr_y,
+            eval_set=(va_x, va_y),
+            **self.fit_params,
+        )
+        self.fitted = True
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if self.cat_features:
+            X = (
+                pl.DataFrame(X, schema=self.feature_names)
+                .cast({x: pl.String for x in self.cat_features})
+                .cast({x: pl.Categorical for x in self.cat_features})
+                .to_pandas()
+            )
+
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+
+        preds = self.model.predict(X)
+
+        if self.loss_function.endswith("WithUncertainty"):
+            return preds[:, 0]
+
+        if self.multi_output:
+            return preds
+
+        if preds.ndim > 1 and not self.multi_output:
+            return preds[:, 0]  # return only the first column
+
+        return preds
+
+    @property
+    def feature_importances_(self) -> Any:
+        return self.model.get_feature_importance()
