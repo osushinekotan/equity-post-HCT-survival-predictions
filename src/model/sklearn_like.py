@@ -28,7 +28,11 @@ class BaseWrapper:
 
     def load(self, out_dir: Path | str) -> None:
         path = self.get_save_path(out_dir)
-        self.model = joblib.load(path)
+        # debug in kaggle
+        try:
+            self.model = joblib.load(path)
+        except Exception as e:
+            print(e)
         self.fitted = True
 
     def get_save_path(self, out_dir: Path | str) -> Path:
