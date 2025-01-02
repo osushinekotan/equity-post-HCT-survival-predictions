@@ -312,3 +312,46 @@ class LinearWrapper(BaseWrapper):
         except Exception as e:
             print(e)
         self.fitted = True
+
+
+import numpy as np
+from sklearn.base import BaseEstimator, RegressorMixin
+
+
+class WeightedAverageModel(BaseEstimator, RegressorMixin):
+    def __init__(self, weights: list[float] | None = None):
+        self.weights = np.array(weights) if weights is not None else None
+
+    def fit(self, X, y=None):
+        if self.weights is None:
+            self.weights = np.ones(X.shape[1])
+        return self
+
+    def predict(self, X):
+        # 加重平均を計算
+        return np.average(X, axis=1, weights=self.weights)
+
+
+class WeightedAverageModelWrapper(BaseWrapper):
+    def __init__(
+        self,
+        name: str = "wavg",
+        model: WeightedAverageModel | None = None,
+        feature_names: list[str] | None = None,
+    ):
+        self.name = name
+        self.model = model or WeightedAverageModel()
+        self.fitted = False
+        self.feature_names = feature_names
+
+    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+        self.fitted = True
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+        return self.model.predict(X)
+
+    @property
+    def feature_importances_(self) -> Any:
+        return None
