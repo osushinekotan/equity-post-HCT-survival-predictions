@@ -8,6 +8,8 @@ import xgboost as xgb
 from catboost import CatBoostRegressor
 from lightgbm import LGBMModel
 from numpy.typing import NDArray
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
 
@@ -250,3 +252,63 @@ class CatBoostRegressorWrapper(BaseWrapper):
     @property
     def feature_importances_(self) -> Any:
         return self.model.get_feature_importance()
+
+
+class LinearWrapper(BaseWrapper):
+    def __init__(
+        self,
+        name: str = "linear",
+        model: Ridge | None = None,
+        feature_names: list[str] | None = None,
+        scaling: bool = False,
+    ):
+        self.name = name
+        self.model = model
+        self.fitted = False
+        self.feature_names = feature_names
+        self.scaling = scaling
+        self.scaler = StandardScaler()
+
+    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+        if self.scaling:
+            scaler = StandardScaler()
+            tr_x = scaler.fit_transform(tr_x)
+            va_x = scaler.transform(va_x)
+
+        self.model.fit(tr_x, tr_y)
+        self.fitted = True
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+        if self.scaling:
+            X = StandardScaler().fit_transform(X)
+
+        return self.model.predict(X).reshape(-1)
+
+    @property
+    def feature_importances_(self) -> Any:
+        # output coef_ as feature_importances_
+        return self.model.coef_.reshape(-1)
+
+    def save(self, out_dir: str | Path) -> None:
+        path = self.get_save_path(out_dir)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if self.scaling:
+            joblib.dump({"model": self.model, "scaler": self.scaler}, path)
+        else:
+            joblib.dump(self.model, path)
+
+    def load(self, out_dir: Path | str) -> None:
+        path = self.get_save_path(out_dir)
+        # debug in kaggle
+        try:
+            if self.scaling:
+                data = joblib.load(path)
+                self.model = data["model"]
+                self.scaler = data["scaler"]
+            else:
+                self.model = joblib.load(path)
+        except Exception as e:
+            print(e)
+        self.fitted = True
