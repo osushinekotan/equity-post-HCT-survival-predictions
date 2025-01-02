@@ -57,7 +57,7 @@ te_result_df = single_inference_fn(
     feature_names=feature_names,
     model_dir=config.ARTIFACT_EXP_DIR(),
     inference_folds=list(range(config.N_SPLITS)),
-    out_dir=config.OUTPUT_DIR,
+    out_dir=config.OUTPUT_DIR / config.EXP_NAME if config.IS_KAGGLE_ENV else config.OUTPUT_DIR,
 )
 print(config.ARTIFACT_EXP_DIR(), config.ARTIFACT_EXP_DIR().exists())
 print(te_result_df["pred"].to_list())
