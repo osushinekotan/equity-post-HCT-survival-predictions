@@ -119,9 +119,14 @@ def single_inference_fn(
     feature_names: list[str],
     model_dir: str | Path,
     inference_folds: list[int],
+    out_dir: str | Path = "./outputs",
 ) -> pl.DataFrame:
     te_preds = []
     model_dir = Path(model_dir) / model.name
+
+    out_dir = Path(out_dir) / model.name
+    out_dir.mkdir(parents=True, exist_ok=True)
+
     for i_fold in inference_folds:
         logger.info(f"🚀 >>> Start training fold {i_fold} =============")
 
@@ -143,4 +148,10 @@ def single_inference_fn(
             logger.error(f"   - ❌ Failed to load model: {e}")
 
     te_pred_ave = np.mean(te_preds, axis=0)
-    return te_pred_ave
+
+    # Save prediction
+    excepted_features = [f for f in features_df.columns if f not in feature_names]
+    te_result_df = features_df.select(excepted_features).with_columns(pl.Series("pred", te_pred_ave))
+    te_result_df.write_csv(out_dir / "te_result.csv")
+
+    return te_result_df

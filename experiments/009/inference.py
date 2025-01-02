@@ -51,17 +51,17 @@ print(f"# of features: {len(feature_names)}")
 print(f"# of cat_features: {len(cat_features)}")
 
 
-test_preds = single_inference_fn(
+te_result_df = single_inference_fn(
     model=XGBoostRegressorWrapper(name="xgb"),
     features_df=features_df,
     feature_names=feature_names,
     model_dir=config.ARTIFACT_EXP_DIR(),
     inference_folds=list(range(config.N_SPLITS)),
+    out_dir=config.OUTPUT_DIR,
 )
 print(config.ARTIFACT_EXP_DIR(), config.ARTIFACT_EXP_DIR().exists())
-print(test_preds)
+print(te_result_df["pred"].to_list())
 
-
-features_df.select(config.ID_COL).with_columns(pl.Series("prediction", test_preds)).write_csv(
+te_result_df.select([config.ID_COL, "pred"]).rename({"pred": "prediction"}).write_csv(
     config.OUTPUT_DIR / "submission.csv"
 )
