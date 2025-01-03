@@ -5,7 +5,7 @@ from typing import Any
 import joblib
 import polars as pl
 import xgboost as xgb
-from catboost import CatBoostRegressor
+from catboost import CatBoostClassifier, CatBoostRegressor
 from lightgbm import LGBMModel
 from numpy.typing import NDArray
 from sklearn.linear_model import Ridge
@@ -17,7 +17,14 @@ class BaseWrapper:
     model: Any
     name: str
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         raise NotImplementedError
 
     def predict(self, X: NDArray) -> NDArray:  # noqa
@@ -73,12 +80,20 @@ class LightGBMWapper(BaseWrapper):
             return y.reshape(-1)
         return y
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         self.initialize()
         self.model.fit(
             tr_x,
             self.reshape_y(tr_y),
             eval_set=[(va_x, self.reshape_y(va_y))],
+            sample_weight=list(tr_w) if tr_w is not None else None,
             **self.fit_params,
         )
         self.fitted = True
@@ -127,7 +142,14 @@ class XGBoostRegressorWrapper(BaseWrapper):
 
         self.model = XGBRegressor(**params)
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         self.initialize()
 
         if self.cat_features:
@@ -147,6 +169,7 @@ class XGBoostRegressorWrapper(BaseWrapper):
             tr_x,
             tr_y,
             eval_set=[(va_x, va_y)],
+            sample_weight=tr_w,
             **self.fit_params,
         )
         self.fitted = True
@@ -200,7 +223,14 @@ class CatBoostRegressorWrapper(BaseWrapper):
         params["eval_metric"] = self.eval_metric
         self.model = CatBoostRegressor(**params)
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         self.initialize()
         if self.cat_features:
             tr_x = (
@@ -220,6 +250,7 @@ class CatBoostRegressorWrapper(BaseWrapper):
             tr_x,
             tr_y,
             eval_set=(va_x, va_y),
+            sample_weight=tr_w,
             **self.fit_params,
         )
         self.fitted = True
@@ -252,6 +283,32 @@ class CatBoostRegressorWrapper(BaseWrapper):
     @property
     def feature_importances_(self) -> Any:
         return self.model.get_feature_importance()
+
+
+class CatBoostClassifierWrapper(CatBoostRegressorWrapper):
+    def initialize(self) -> None:
+        params = copy.deepcopy(self.model.get_params())
+        params["eval_metric"] = self.eval_metric
+        self.model = CatBoostClassifier(**params)
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if self.cat_features:
+            X = (
+                pl.DataFrame(X, schema=self.feature_names)
+                .cast({x: pl.String for x in self.cat_features})
+                .cast({x: pl.Categorical for x in self.cat_features})
+                .to_pandas()
+            )
+
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+
+        preds = self.model.predict_proba(X)
+
+        if preds.ndim == 2:
+            return preds[:, 1]  # return positive class probability if binary classification
+
+        return preds
 
 
 class LinearWrapper(BaseWrapper):

@@ -18,6 +18,7 @@ def single_train_fn(
     feature_cols: list[str],
     target_col: str | list[str],
     meta_cols: list[str],
+    weight_col: str | None = None,
     fold_col: str | Path = "fold",
     out_dir: str | Path = "./outputs",
     eval_fn: None = None,
@@ -41,6 +42,8 @@ def single_train_fn(
         va_x = va_df.select(feature_cols).to_numpy()
         va_y = va_df[target_col].to_numpy()
 
+        tr_w = features_df.filter(pl.col(fold_col) != i_fold)[weight_col].to_numpy() if weight_col else None
+
         i_out_dir = out_dir / f"fold_{i_fold:02}"
 
         if use_eval_metric_extra_va_df:
@@ -50,7 +53,7 @@ def single_train_fn(
             model.load(out_dir=i_out_dir)
             logger.info(f"   - ❌ Skip training fold {i_fold}")
         else:
-            model.fit(tr_x=tr_x, tr_y=tr_y, va_x=va_x, va_y=va_y)
+            model.fit(tr_x=tr_x, tr_y=tr_y, va_x=va_x, va_y=va_y, tr_w=tr_w)
             model.save(out_dir=i_out_dir)
 
         trained_models.append(model)
