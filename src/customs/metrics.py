@@ -2,6 +2,29 @@ import numpy as np
 import polars as pl
 from catboost import MultiTargetCustomMetric
 from lifelines.utils import concordance_index
+from sklearn.metrics import roc_auc_score
+
+
+class ROCAUCMetric:
+    def __init__(
+        self,
+        event_label: str = "efs",
+        prediction_label: str = "pred",
+        name: str | None = None,
+    ):
+        self.event_label = event_label
+        self.prediction_label = prediction_label
+        self._name = name or self.__class__.__name__
+
+    def __call__(self, input_df: pl.DataFrame) -> float:
+        y_event = input_df[self.event_label].to_numpy()
+        y_pred = input_df[self.prediction_label].to_numpy()
+        score = roc_auc_score(y_event, y_pred)
+        return score
+
+    @property
+    def __name__(self) -> str:
+        return self._name
 
 
 class Metric:
