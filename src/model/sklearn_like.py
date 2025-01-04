@@ -326,7 +326,14 @@ class LinearWrapper(BaseWrapper):
         self.scaling = scaling
         self.scaler = StandardScaler()
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         if self.scaling:
             scaler = StandardScaler()
             tr_x = scaler.fit_transform(tr_x)
@@ -401,7 +408,14 @@ class WeightedAverageModelWrapper(BaseWrapper):
         self.fitted = False
         self.feature_names = feature_names
 
-    def fit(self, tr_x: NDArray, tr_y: NDArray, va_x: NDArray, va_y: NDArray) -> None:
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        tr_w: NDArray | None = None,
+    ) -> None:
         self.fitted = True
 
     def predict(self, X: NDArray) -> NDArray:  # noqa
