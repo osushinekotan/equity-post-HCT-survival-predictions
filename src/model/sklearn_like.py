@@ -339,7 +339,7 @@ class LinearWrapper(BaseWrapper):
             tr_x = scaler.fit_transform(tr_x)
             va_x = scaler.transform(va_x)
 
-        self.model.fit(tr_x, tr_y)
+        self.model.fit(tr_x, tr_y, sample_weight=tr_w)
         self.fitted = True
 
     def predict(self, X: NDArray) -> NDArray:  # noqa
