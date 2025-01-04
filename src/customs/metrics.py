@@ -1,6 +1,8 @@
 import numpy as np
 import polars as pl
 from catboost import MultiTargetCustomMetric
+
+# from joblib import Parallel, delayed
 from lifelines.utils import concordance_index
 from sklearn.metrics import roc_auc_score
 
@@ -61,20 +63,23 @@ def metric(
     y_event: np.ndarray,
     y_pred: np.ndarray,
     race_group: np.ndarray,
+    n_jobs: int = -1,
 ) -> float:
     """
-    グループごとのC-indexの(平均 - sqrt(分散))を計算する関数 (df 使わないバージョン)
+    グループごとのC-indexの(平均 - sqrt(分散))を計算する関数 (並列版)
 
     Parameters
     ----------
     y_time : np.ndarray
-        イベントまたはセンサーされた時間(efs_timeに相当)
+        イベントまたはセンサーされた時間
     y_event : np.ndarray
-        イベントが発生したかどうかのフラグ(efsに相当, 1 or 0)
+        イベントが発生したかどうかのフラグ
     y_pred : np.ndarray
-        モデルからの予測値(predに相当)
+        モデルからの予測値
     race_group : np.ndarray
-        サンプルごとのグループを表す配列(race_groupに相当)
+        サンプルごとのグループを表す配列
+    n_jobs : int, optional
+        並列実行に用いるスレッド(プロセス)数
 
     Returns
     -------
@@ -83,19 +88,22 @@ def metric(
     """
 
     unique_groups = np.unique(race_group)
-    metric_list = []
 
-    for g in unique_groups:
-        indices = np.where(race_group == g)
+    def calc_c_index_for_group(g):
+        # gと一致する要素のインデックスをブールマスクで取得
+        mask = race_group == g
         # Concordance index計算
-        c_index_race = concordance_index(
-            y_time[indices],
-            -y_pred[indices],
-            y_event[indices],
+        return concordance_index(
+            y_time[mask],
+            -y_pred[mask],
+            y_event[mask],
         )
-        metric_list.append(c_index_race)
 
-    # 平均 - sqrt(分散)
+    # 並列計算: unique_groups に含まれる各グループに対して同時に計算
+    # metric_list = Parallel(n_jobs=n_jobs)(delayed(calc_c_index_for_group)(g) for g in unique_groups)
+    metric_list = [calc_c_index_for_group(g) for g in unique_groups]
+
+    # 最終的な指標: (平均 - sqrt(分散))
     return float(np.mean(metric_list) - np.sqrt(np.var(metric_list)))
 
 
