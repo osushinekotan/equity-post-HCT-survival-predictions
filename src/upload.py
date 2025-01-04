@@ -16,9 +16,7 @@ OUTPUT_DIR = DATA_DIR / "output"
 INPUT_DIR.mkdir(exist_ok=True, parents=True)
 
 KAGGLE_USERNAME = os.getenv("KAGGLE_USERNAME")
-KAGGLE_COMPETITION_NAME = os.getenv(
-    "KAGGLE_COMPETITION_NAME", "equity-post-HCT-survival-predictions"
-)
+KAGGLE_COMPETITION_NAME = os.getenv("KAGGLE_COMPETITION_NAME", "equity-post-HCT-survival-predictions")
 
 assert KAGGLE_USERNAME, "KAGGLE_USERNAME is not set."
 
@@ -36,9 +34,7 @@ if __name__ == "__main__":
             ),
             "artifacts": lambda exp_name: model_upload(
                 handle=f"{BASE_ARTIFACTS_HANDLE}/{exp_name}",
-                local_model_dir=OUTPUT_DIR
-                / exp_name
-                / "1",  # output dir に存在する artifact をアップロード
+                local_model_dir=OUTPUT_DIR / exp_name / "1",  # output dir に存在する artifact をアップロード
                 update=False,
             ),
         }

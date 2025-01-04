@@ -14,9 +14,7 @@ ROOT_DIR = rootutils.setup_root(".", indicator="pyproject.toml", cwd=True, doten
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
 
 KAGGLE_USERNAME = os.getenv("KAGGLE_USERNAME")
-KAGGLE_COMPETITION_NAME = os.getenv(
-    "KAGGLE_COMPETITION_NAME", "equity-post-HCT-survival-predictions"
-)
+KAGGLE_COMPETITION_NAME = os.getenv("KAGGLE_COMPETITION_NAME", "equity-post-HCT-survival-predictions")
 
 assert KAGGLE_USERNAME, "KAGGLE_USERNAME is not set."
 
@@ -32,9 +30,7 @@ if __name__ == "__main__":
             force_download=False: competition_download(
                 handle=handle, destination=destination, force_download=force_download
             ),
-            "datasets_download": lambda handles,
-            destination=INPUT_DIR,
-            force_download=False: datasets_download(
+            "datasets_download": lambda handles, destination=INPUT_DIR, force_download=False: datasets_download(
                 handles=handles, destination=destination, force_download=force_download
             ),
         }
