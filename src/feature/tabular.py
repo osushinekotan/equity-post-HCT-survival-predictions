@@ -55,7 +55,7 @@ class AggregateEncoder(BaseEncoder):
         group_keys: list[str] | str,
         agg_exprs: list[pl.Expr],
         prefix: str = "f_",
-        extra_transforms: dict[str, dict[str, str]] | None = None,
+        extra_transforms: list[dict[str, dict[str, str]]] | None = None,
     ) -> None:
         """aggregate numerical columns by group keys
 
@@ -65,7 +65,7 @@ class AggregateEncoder(BaseEncoder):
                 - set alias as the output column name
                 - `agg_{expr_alias}_{group_key_name}` will be used as the output column name
             prefix (str, optional): prefix of the output column name. Defaults to "f_".
-            extra_transforms (dict[str, dict[str, str]] | None, optional): extra transformation methods to apply. Defaults to None.
+            extra_transforms (list[dict[str, dict[str, str]]] | None, optional): extra transformation methods to apply. Defaults to None.
 
         Example:
         ```
@@ -73,20 +73,21 @@ class AggregateEncoder(BaseEncoder):
             group_keys="category",
             agg_exprs=[pl.col("val").mean().alias("mean_val"), pl.col("val").std().alias("std_val")],
             prefix="f_",
-            extra_transforms={
-                "z-score": {
+            extra_transforms=[
+                {
+                    "method": "z-score",
                     "val": "val",
                     "mean": "mean_val",
                     "std": "std_val",
                 },
-            },
+            ],
         )
         ```
         """
         self.group_keys = group_keys
         self.agg_exprs = agg_exprs
         self.prefix = prefix
-        self.extra_transforms = extra_transforms or {}
+        self.extra_transforms = extra_transforms or []
         self.mapping_df: pl.DataFrame | None = None
         self.fitted = False
 
@@ -127,7 +128,9 @@ class AggregateEncoder(BaseEncoder):
             return base_df.select(list(self.aggregated_colnames.values())).select(pl.all().name.prefix(self.prefix))
 
         out_cols = list(self.aggregated_colnames.values())
-        for method, _agg_names in self.extra_transforms.items():
+        for extra_transform in self.extra_transforms:
+            method = extra_transform.pop("method")
+            _agg_names = extra_transform.copy()
             if method == "z-score":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "mean", "std"])
                 extra_colname = f"{method}_{_agg_names['val']}"
