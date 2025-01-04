@@ -133,7 +133,7 @@ class AggregateEncoder(BaseEncoder):
             _agg_names = extra_transform.copy()
             if method == "z-score":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "mean", "std"])
-                extra_colname = f"{method}_{_agg_names['val']}"
+                extra_colname = f"{method}_{_agg_names['val']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (
                         (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["mean"]]))
@@ -143,7 +143,7 @@ class AggregateEncoder(BaseEncoder):
                 out_cols.append(extra_colname)
             elif method == "med-abs-dev":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "median"])
-                extra_colname = f"{method}_{_agg_names['val']}"
+                extra_colname = f"{method}_{_agg_names['val']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["median"]]))
                     .abs()
@@ -153,7 +153,7 @@ class AggregateEncoder(BaseEncoder):
 
             elif method == "mean-diff":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "mean"])
-                extra_colname = f"{method}_{_agg_names['val']}"
+                extra_colname = f"{method}_{_agg_names['val']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["mean"]])).alias(
                         extra_colname
@@ -163,7 +163,7 @@ class AggregateEncoder(BaseEncoder):
 
             elif method == "median-diff":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "median"])
-                extra_colname = f"{method}_{_agg_names['val']}"
+                extra_colname = f"{method}_{_agg_names['val']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (pl.col(_agg_names["val"]) - pl.col(self.aggregated_colnames[_agg_names["median"]])).alias(
                         extra_colname
@@ -173,7 +173,7 @@ class AggregateEncoder(BaseEncoder):
 
             elif method == "mean-ratio":
                 assert sorted(list(_agg_names.keys())) == sorted(["val", "mean"])
-                extra_colname = f"{method}_{_agg_names['val']}"
+                extra_colname = f"{method}_{_agg_names['val']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (pl.col(_agg_names["val"]) / pl.col(self.aggregated_colnames[_agg_names["mean"]])).alias(
                         extra_colname
@@ -183,7 +183,7 @@ class AggregateEncoder(BaseEncoder):
 
             elif method == "range":  # (max- min)
                 assert sorted(list(_agg_names.keys())) == sorted(["min", "max"])
-                extra_colname = f"{method}_{_agg_names['max']}_{_agg_names['min']}"
+                extra_colname = f"{method}_{_agg_names['max']}_{_agg_names['min']}_grpby_{self.group_key_name}"
                 base_df = base_df.with_columns(
                     (pl.col(_agg_names["max"]) - pl.col(_agg_names["min"])).alias(extra_colname)
                 )
