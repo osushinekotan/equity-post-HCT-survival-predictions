@@ -12,6 +12,7 @@ dependencies = [
     "lifelines>=0.30.0",
     "lightgbm>=4.5.0",
     "nbformat>=5.10.4",
+    "numba>=0.60.0",
     "numpy==1.26.4",
     "polars==1.6.0",
     "pyarrow>=18.1.0",
