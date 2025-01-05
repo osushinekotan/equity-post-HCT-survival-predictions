@@ -12,9 +12,6 @@
   "competition_sources": ["equity-post-HCT-survival-predictions"],
   "kernel_sources": ["mst8823/equity-post-HCT-survival-predictions-deps"],
   "model_sources": [
-    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/019/1",
-    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/018/1",
-    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/023/1",
-    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/030/1"
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/031/1"
   ]
 }
