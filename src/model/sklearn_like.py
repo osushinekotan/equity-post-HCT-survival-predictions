@@ -192,6 +192,32 @@ class XGBoostRegressorWrapper(BaseWrapper):
         return self.model.feature_importances_
 
 
+class XGBoostClassifierWrapper(XGBoostRegressorWrapper):
+    def initialize(self) -> None:
+        params = copy.deepcopy(self.params)
+        params["eval_metric"] = self.eval_metric
+
+        if self.early_stopping_params:
+            callbacks = params.get("callbacks") or []
+            early_stopping_callback = xgb.callback.EarlyStopping(**self.early_stopping_params)
+            params["callbacks"] = callbacks + [early_stopping_callback]
+
+        self.model = xgb.XGBClassifier(**params)
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+
+        if self.cat_features:
+            X = (
+                pl.DataFrame(X, schema=self.feature_names)
+                .cast({x: pl.String for x in self.cat_features})
+                .cast({x: pl.Categorical for x in self.cat_features})
+                .to_pandas()
+            )
+        return self.model.predict_proba(X)[:, 1]
+
+
 class CatBoostRegressorWrapper(BaseWrapper):
     # https://catboost.ai/docs/en/concepts/python-reference_catboostregressor
     def __init__(
