@@ -3,8 +3,10 @@ import polars as pl
 from catboost import MultiTargetCustomMetric
 
 # from joblib import Parallel, delayed
-from lifelines.utils import concordance_index
+# from lifelines.utils import concordance_index
 from sklearn.metrics import roc_auc_score
+
+from src.customs.c_index import fast_concordance_index as concordance_index
 
 
 class ROCAUCMetric:
