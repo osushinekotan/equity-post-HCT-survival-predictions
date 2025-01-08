@@ -15,34 +15,97 @@ train_test_df = pl.concat([raw_train_df, raw_test_df], how="diagonal_relaxed").s
 )
 
 
-encoders = [
-    RawEncoder(columns=config.META_COLS, prefix=""),
-    RawEncoder(
-        columns=(
-            [
-                *config.NUMERICAL_COLS,
-            ]
+def fe(
+    train_test_df: pl.DataFrame,
+    output_dataset: str = "TRAIN",
+) -> pl.DataFrame:
+    # https://www.kaggle.com/code/albansteff/cibmtr-eda-ensemble-model-recalculate-hla/notebook
+    train_test_df = train_test_df.with_columns(
+        (
+            pl.col("hla_match_a_low").fill_null(0)
+            + pl.col("hla_match_b_low").fill_null(0)
+            + pl.col("hla_match_drb1_high").fill_null(0)
+        ).alias("hla_nmdp_6_full"),
+        (
+            pl.col("hla_match_a_low").fill_null(0)
+            + pl.col("hla_match_b_low").fill_null(0)
+            + pl.col("hla_match_drb1_low").fill_null(0)
+        ).alias("hla_low_res_6_full"),
+        (
+            pl.col("hla_match_a_high").fill_null(0)
+            + pl.col("hla_match_b_high").fill_null(0)
+            + pl.col("hla_match_drb1_high").fill_null(0)
+        ).alias("hla_high_res_6_full"),
+        (
+            pl.col("hla_match_a_low").fill_null(0)
+            + pl.col("hla_match_b_low").fill_null(0)
+            + pl.col("hla_match_c_low").fill_null(0)
+            + pl.col("hla_match_drb1_low").fill_null(0)
+        ).alias("hla_low_res_8_full"),
+        (
+            pl.col("hla_match_a_high").fill_null(0)
+            + pl.col("hla_match_b_high").fill_null(0)
+            + pl.col("hla_match_c_high").fill_null(0)
+            + pl.col("hla_match_drb1_high").fill_null(0)
+        ).alias("hla_high_res_8_full"),
+        (
+            pl.col("hla_match_a_low").fill_null(0)
+            + pl.col("hla_match_b_low").fill_null(0)
+            + pl.col("hla_match_c_low").fill_null(0)
+            + pl.col("hla_match_drb1_low").fill_null(0)
+            + pl.col("hla_match_dqb1_low").fill_null(0)
+        ).alias("hla_low_res_10_full"),
+        (
+            pl.col("hla_match_a_high").fill_null(0)
+            + pl.col("hla_match_b_high").fill_null(0)
+            + pl.col("hla_match_c_high").fill_null(0)
+            + pl.col("hla_match_drb1_high").fill_null(0)
+            + pl.col("hla_match_dqb1_high").fill_null(0)
+        ).alias("hla_high_res_10_full"),
+    )
+    encoders = [
+        RawEncoder(columns=config.META_COLS, prefix=""),
+        RawEncoder(
+            columns=(
+                [
+                    *config.NUMERICAL_COLS,
+                    "hla_nmdp_6_full",
+                    "hla_low_res_6_full",
+                    "hla_high_res_6_full",
+                    "hla_low_res_8_full",
+                    "hla_high_res_8_full",
+                    "hla_low_res_10_full",
+                    "hla_high_res_10_full",
+                ]
+            ),
+            prefix=f"{config.FEATURE_PREFIX}n_",
         ),
-        prefix=f"{config.FEATURE_PREFIX}n_",
-    ),
-    OrdinalEncoder(
-        columns=(
-            [
-                *config.CATEGORICAL_COLS,
-            ]
+        OrdinalEncoder(
+            columns=(
+                [
+                    *config.CATEGORICAL_COLS,
+                ]
+            ),
+            prefix=f"{config.FEATURE_PREFIX}c_",
         ),
-        prefix=f"{config.FEATURE_PREFIX}c_",
-    ),
-]
+    ]
 
-train_df = train_test_df.filter(pl.col(config.DATASET_COL) == "TRAIN")
-for encoder in encoders:
-    encoder.fit(train_df)
+    for encoder in encoders:
+        encoder.fit(train_test_df.filter(pl.col(config.DATASET_COL) == "TRAIN"))
 
-features_df = pl.concat(
-    [encoder.transform(train_test_df.filter(pl.col(config.DATASET_COL) == "TEST")) for encoder in encoders],
-    how="horizontal",
-)
+    features_df = pl.concat(
+        [
+            encoder.transform(
+                train_test_df.filter(pl.col(config.DATASET_COL) == output_dataset),
+            )
+            for encoder in encoders
+        ],
+        how="horizontal",
+    )
+    return features_df
+
+
+features_df = fe(train_test_df, output_dataset="TEST")
 
 feature_names = sorted([x for x in features_df.columns if x.startswith(config.FEATURE_PREFIX)])
 cat_features = [x for x in feature_names if x.startswith(f"{config.FEATURE_PREFIX}c_")]
