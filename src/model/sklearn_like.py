@@ -1,13 +1,17 @@
 import copy
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import polars as pl
 import xgboost as xgb
 from catboost import CatBoostClassifier, CatBoostRegressor
 from lightgbm import LGBMModel
 from numpy.typing import NDArray
+from scipy.optimize import minimize
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
@@ -404,21 +408,45 @@ class LinearWrapper(BaseWrapper):
         self.fitted = True
 
 
-import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
-
-
 class WeightedAverageModel(BaseEstimator, RegressorMixin):
-    def __init__(self, weights: list[float] | None = None):
+    def __init__(
+        self,
+        weights: list[float] | None = None,
+        eval_metric: Callable | None = None,
+        is_max_optimal: bool = False,
+    ):
         self.weights = np.array(weights) if weights is not None else None
+        self.eval_metric = eval_metric
+        self.is_max_optimal = is_max_optimal
 
-    def fit(self, X, y=None):
+    def fit(self, X, y):
         if self.weights is None:
-            self.weights = np.ones(X.shape[1])
+            self.weights = np.ones(X.shape[1]) / X.shape[1]
+
+        if self.eval_metric is None:
+            print("Warning: eval_metric is not set. weights are not updated.")
+            return self
+
+        constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+        bounds = [(0, None) for _ in range(X.shape[1])]
+
+        def objective_function(weights):
+            predictions = np.average(X, axis=1, weights=weights)
+            score = self.eval_metric(y, predictions)
+            # 最大化の場合は符号を反転
+            return -score if self.is_max_optimal else score
+
+        result = minimize(
+            objective_function,
+            x0=self.weights,
+            bounds=bounds,
+            constraints=constraints,
+        )
+
+        self.weights = result.x
         return self
 
     def predict(self, X):
-        # 加重平均を計算
         return np.average(X, axis=1, weights=self.weights)
 
 
@@ -442,6 +470,7 @@ class WeightedAverageModelWrapper(BaseWrapper):
         va_y: NDArray,
         tr_w: NDArray | None = None,
     ) -> None:
+        self.model.fit(X=tr_x, y=tr_y)
         self.fitted = True
 
     def predict(self, X: NDArray) -> NDArray:  # noqa
