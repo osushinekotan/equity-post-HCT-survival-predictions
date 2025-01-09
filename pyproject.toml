@@ -14,6 +14,7 @@ dependencies = [
     "nbformat>=5.10.4",
     "numba>=0.60.0",
     "numpy==1.26.4",
+    "optuna>=4.1.0",
     "polars==1.6.0",
     "pyarrow>=18.1.0",
     "scikit-learn==1.2.2",
