@@ -19,6 +19,7 @@ dependencies = [
     "scikit-learn==1.2.2",
     "seaborn>=0.13.2",
     "shirokumas>=0.0.4",
+    "tabpfn>=2.0.0",
     "xgboost>=2.1.3",
 ]
 
@@ -30,6 +31,7 @@ dev-dependencies = [
     "pre-commit>=4.0.1",
     "rootutils>=1.0.7",
     "fire>=0.7.0",
+    "ipywidgets>=8.1.5",
 ]
 
 [tool.ruff]

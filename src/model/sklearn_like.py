@@ -162,12 +162,14 @@ class XGBoostRegressorWrapper(BaseWrapper):
                 .cast({x: pl.String for x in self.cat_features})
                 .cast({x: pl.Categorical for x in self.cat_features})
                 .to_pandas()
+                .astype({x: "category" for x in self.cat_features})
             )
             va_x = (
                 pl.DataFrame(va_x, schema=self.feature_names)
                 .cast({x: pl.String for x in self.cat_features})
                 .cast({x: pl.Categorical for x in self.cat_features})
                 .to_pandas()
+                .astype({x: "category" for x in self.cat_features})
             )
         self.model.fit(
             tr_x,
@@ -188,6 +190,7 @@ class XGBoostRegressorWrapper(BaseWrapper):
                 .cast({x: pl.String for x in self.cat_features})
                 .cast({x: pl.Categorical for x in self.cat_features})
                 .to_pandas()
+                .astype({x: "category" for x in self.cat_features})
             )
         return self.model.predict(X)
 
@@ -471,6 +474,42 @@ class WeightedAverageModelWrapper(BaseWrapper):
         tr_w: NDArray | None = None,
     ) -> None:
         self.model.fit(X=tr_x, y=tr_y)
+        self.fitted = True
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+        return self.model.predict(X)
+
+    @property
+    def feature_importances_(self) -> Any:
+        return None
+
+
+from tabpfn import TabPFNRegressor
+
+
+class TabPFNRegressorWapper(BaseWrapper):
+    def __init__(
+        self,
+        name: str = "tabpfn",
+        model: TabPFNRegressor | None = None,
+        feature_names: list[str] | None = None,
+    ):
+        self.name = name
+        self.model = model or TabPFNRegressor()
+        self.fitted = False
+        self.feature_names = feature_names
+
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        **kwargs,
+    ) -> None:
+        self.model.fit(tr_x, tr_y)
         self.fitted = True
 
     def predict(self, X: NDArray) -> NDArray:  # noqa
