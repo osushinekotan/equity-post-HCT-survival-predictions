@@ -1,0 +1,11 @@
+{
+  "name": "EPHSP",
+  "dockerComposeFile": ["./compose.gpu.yml"],
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "containerEnv": {
+    "TZ": "Asia/Tokyo"
+  },
+  "features": {},
+  "postCreateCommand": "sh .devcontainer/PostCreateCommand.sh"
+}
