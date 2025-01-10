@@ -520,6 +520,3 @@ class TabPFNRegressorWapper(BaseWrapper):
     @property
     def feature_importances_(self) -> Any:
         return None
-
-    def load(self, out_dir: Path | str) -> None:
-        self.fitted = True
