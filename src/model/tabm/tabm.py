@@ -8,8 +8,8 @@ import torch
 
 # from schedulefree import AdamWScheduleFree
 from sklearn.preprocessing import MinMaxScaler
-from tqdm import tqdm
 
+# from tqdm import tqdm
 from .tabm_reference import Model, make_parameter_groups
 
 
@@ -99,13 +99,14 @@ class TabMRegressor:
             "eval_score": -math.inf,
         }
         remaining_patience = self.patience
-        epoch_size = math.ceil(len(X) / self.batch_size)
+        # epoch_size = math.ceil(len(X) / self.batch_size)
+        header_printed = False
         for epoch in range(self.max_epochs):
             # TRAIN.
             optimizer.zero_grad()
             train_losses = []
             progress_bar = torch.randperm(len(y_train), device=self.device).split(self.batch_size)
-            progress_bar = tqdm(progress_bar, desc=f"Epoch {epoch}", total=epoch_size) if self.verbose else progress_bar
+            # progress_bar = tqdm(progress_bar, desc=f"Epoch {epoch}", total=epoch_size) if self.verbose else progress_bar
             for batch_idx in progress_bar:
                 self.model.train()
 
@@ -165,21 +166,34 @@ class TabMRegressor:
             else:
                 val_score = self.eval_metric(y_true=val_y_targets, y_pred=val_y_preds)
 
+            update_best = val_score > best["eval_score"]
+            if update_best:
+                best_score = val_score
+            else:
+                best_score = best["eval_score"]
+
             if self.verbose:
+                if not header_printed:
+                    print(
+                        f"{'Epoch':<10} | {'Train Loss':<12} | {'Val Loss':<10} | {'Val Score':<10} | {'Best Score':<10}"
+                    )
+                    print("-" * 60)
+                    header_printed = True
+
                 print(
-                    f"Epoch {epoch} | Train Loss: {mean_train_loss} | Val Loss: {mean_val_loss} | Val Score: {val_score} | Best Score: {best['eval_score']}"
+                    f"{epoch:<10} | {mean_train_loss:<12.6f} | {mean_val_loss:<10.6f} | {val_score:<10.6f} | {best_score:<10.6f}"
                 )
 
             # COMPARE TO BEST.
-            if val_score > best["eval_score"]:
+            if update_best:
                 best["epoch"] = epoch
                 best["eval_loss"] = mean_val_loss
                 best["eval_score"] = val_score
                 best["model_state_dict"] = self.model.state_dict()
                 remaining_patience = self.patience
 
-                if self.verbose:
-                    print(f"New best model found! | Epoch: {epoch} | Best Score: {val_score}")
+                # if self.verbose:
+                #     print(f"🎉 New best model found! | Epoch: {epoch} | Best Score: {val_score}")
             else:
                 remaining_patience -= 1
 
