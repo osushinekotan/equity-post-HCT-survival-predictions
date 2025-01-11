@@ -5,6 +5,7 @@ from typing import Any
 
 import joblib
 import numpy as np
+import pandas as pd
 import polars as pl
 import xgboost as xgb
 from catboost import CatBoostClassifier, CatBoostRegressor
@@ -515,6 +516,48 @@ class TabPFNRegressorWapper(BaseWrapper):
     def predict(self, X: NDArray) -> NDArray:  # noqa
         if not self.fitted:
             raise ValueError("Model is not fitted yet")
+        return self.model.predict(X)
+
+    @property
+    def feature_importances_(self) -> Any:
+        return None
+
+
+from .tabm.tabm import TabMRegressor
+
+
+class TabMRegressorWrapper(BaseWrapper):
+    def __init__(
+        self,
+        name: str = "tabm",
+        model: TabMRegressor | None = None,
+        feature_names: list[str] | None = None,
+    ):
+        self.name = name
+        self.model = model or TabMRegressor()
+        self.fitted = False
+        self.feature_names = feature_names
+        self.eval_metric = self.model.eval_metric
+
+    def fit(
+        self,
+        tr_x: NDArray,
+        tr_y: NDArray,
+        va_x: NDArray,
+        va_y: NDArray,
+        **kwargs,
+    ) -> None:
+        tr_x = pd.DataFrame(tr_x, columns=self.feature_names)
+        va_x = pd.DataFrame(va_x, columns=self.feature_names)
+        self.model.eval_metric = self.eval_metric
+        self.model.fit(X=tr_x, y=tr_y, eval_set=(va_x, va_y))
+        self.fitted = True
+
+    def predict(self, X: NDArray) -> NDArray:  # noqa
+        if not self.fitted:
+            raise ValueError("Model is not fitted yet")
+
+        X = pd.DataFrame(X, columns=self.feature_names)
         return self.model.predict(X)
 
     @property
