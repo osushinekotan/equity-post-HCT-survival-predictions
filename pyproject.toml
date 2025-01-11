@@ -17,11 +17,14 @@ dependencies = [
     "optuna>=4.1.0",
     "polars==1.6.0",
     "pyarrow>=18.1.0",
+    "rtdl-num-embeddings>=0.0.11",
+    "schedulefree>=1.4",
     "scikit-learn==1.2.2",
     "scikit-survival>=0.21.0",
     "seaborn>=0.13.2",
     "shirokumas>=0.0.4",
     "tabpfn>=2.0.0",
+    "torchsurv>=0.1.4",
     "xgboost>=2.1.3",
 ]
 

@@ -410,11 +410,14 @@ dependencies = [
     { name = "optuna" },
     { name = "polars" },
     { name = "pyarrow" },
+    { name = "rtdl-num-embeddings" },
+    { name = "schedulefree" },
     { name = "scikit-learn" },
     { name = "scikit-survival" },
     { name = "seaborn" },
     { name = "shirokumas" },
     { name = "tabpfn" },
+    { name = "torchsurv" },
     { name = "xgboost" },
 ]
 
@@ -443,11 +446,14 @@ requires-dist = [
     { name = "optuna", specifier = ">=4.1.0" },
     { name = "polars", specifier = "==1.6.0" },
     { name = "pyarrow", specifier = ">=18.1.0" },
+    { name = "rtdl-num-embeddings", specifier = ">=0.0.11" },
+    { name = "schedulefree", specifier = ">=1.4" },
     { name = "scikit-learn", specifier = "==1.2.2" },
     { name = "scikit-survival", specifier = ">=0.21.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "shirokumas", specifier = ">=0.0.4" },
     { name = "tabpfn", specifier = ">=2.0.0" },
+    { name = "torchsurv", specifier = ">=0.1.4" },
     { name = "xgboost", specifier = ">=2.1.3" },
 ]
 
@@ -942,6 +948,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/84/6a/10c4921526600559530d49d70553d1bc1bd84c616808c629a620a6160305/lightgbm-4.5.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:7f0a3dded769d83560845f2c3fe1966630ec1ca527c380d9d48d9b35579a796e", size = 3425739 },
     { url = "https://files.pythonhosted.org/packages/4e/19/1b928cad70a4e1a3e2c37d5417ca2182510f2451eaadb6c91cd9ec692cae/lightgbm-4.5.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:960a0e7c077de0ca3053f1325d3edfc92ea815acf5176adcacdea0f635aeef9b", size = 3552481 },
     { url = "https://files.pythonhosted.org/packages/d9/28/3be76b591a2e14a031b681b8283acf1dec2ad521f6f1701b7957df68c466/lightgbm-4.5.0-py3-none-win_amd64.whl", hash = "sha256:7ccb73ee9fb74fbbf89ad24c57a6edad505aa8f2165d02b999a082dbbbb0ee57", size = 1444319 },
+]
+
+[[package]]
+name = "lightning-utilities"
+version = "0.11.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "setuptools" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8c/4d/54d38e237ab437f25f191602373d99b89d1d047ad2a3bb5ad0d84ea5daa6/lightning_utilities-0.11.9.tar.gz", hash = "sha256:f5052b81344cc2684aa9afd74b7ce8819a8f49a858184ec04548a5a109dfd053", size = 29362 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/f3/1305321a12c984405e26fc64b5d521569e9872fb811f4aace8e168099160/lightning_utilities-0.11.9-py3-none-any.whl", hash = "sha256:ac6d4e9e28faf3ff4be997876750fee10dc604753dbc429bf3848a95c5d7e0d2", size = 28356 },
 ]
 
 [[package]]
@@ -1979,6 +1999,18 @@ wheels = [
 ]
 
 [[package]]
+name = "rtdl-num-embeddings"
+version = "0.0.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/71/78/91f7d76e03c7e8ce5fe53f99fb64021230308c77a594afb4861931e3a4d9/rtdl_num_embeddings-0.0.11.tar.gz", hash = "sha256:b9c799cbb286955876fb469ef983cb6dedc431229189493347523b5a4bff6e8f", size = 1038749 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/e7/d2bbfae0c106687d6191366638be0c5bfd44c1b01fd79eafe3d906e06dbe/rtdl_num_embeddings-0.0.11-py3-none-any.whl", hash = "sha256:2035e1f41e2dde91c4cc37ec921f24bef1a74391124f79c4bdb1a6ac59df0c62", size = 13127 },
+]
+
+[[package]]
 name = "ruff"
 version = "0.8.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2002,6 +2034,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/10/98/ed6b56a30ee76771c193ff7ceeaf1d2acc98d33a1a27b8479cbdb5c17a23/ruff-0.8.4-py3-none-win_amd64.whl", hash = "sha256:f21a1143776f8656d7f364bd264a9d60f01b7f52243fbe90e7670c0dfe0cf65d", size = 9660086 },
     { url = "https://files.pythonhosted.org/packages/13/9f/026e18ca7d7766783d779dae5e9c656746c6ede36ef73c6d934aaf4a6dec/ruff-0.8.4-py3-none-win_arm64.whl", hash = "sha256:9183dd615d8df50defa8b1d9a074053891ba39025cf5ae88e8bcb52edcc4bf08", size = 9074500 },
 ]
+
+[[package]]
+name = "schedulefree"
+version = "1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/8e/1952577f6c3ca6669383f1096891c5d14d9c35d5d454619d21c9d65b8116/schedulefree-1.4.tar.gz", hash = "sha256:59b7ec9ac0f714730cbcdde435b7d9b415d3fc3c5d2133e0f124e07aba4ba86a", size = 22815 }
 
 [[package]]
 name = "scikit-learn"
@@ -2310,6 +2348,36 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/ba/607d013b55b9fd805db2a5c2662ec7551f1910b4eef39653eeaba182c5b2/torch-2.5.1-cp312-cp312-win_amd64.whl", hash = "sha256:73e58e78f7d220917c5dbfad1a40e09df9929d3b95d25e57d9f8558f84c9a11c", size = 203046841 },
     { url = "https://files.pythonhosted.org/packages/57/6c/bf52ff061da33deb9f94f4121fde7ff3058812cb7d2036c97bc167793bd1/torch-2.5.1-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:8c712df61101964eb11910a846514011f0b6f5920c55dbf567bff8a34163d5b1", size = 63858109 },
     { url = "https://files.pythonhosted.org/packages/69/72/20cb30f3b39a9face296491a86adb6ff8f1a47a897e4d14667e6cf89d5c3/torch-2.5.1-cp313-cp313-manylinux1_x86_64.whl", hash = "sha256:9b61edf3b4f6e3b0e0adda8b3960266b9009d02b37555971f4d1c8f7a05afed7", size = 906393265 },
+]
+
+[[package]]
+name = "torchmetrics"
+version = "1.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "lightning-utilities" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/14/c5/8d916585d4d6eb158105c21b28cd4b0ed296d74e499bf8f104368de16619/torchmetrics-1.6.1.tar.gz", hash = "sha256:a5dc236694b392180949fdd0a0fcf2b57135c8b600e557c725e077eb41e53e64", size = 540022 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9d/e1/84066ff60a20dfa63f4d9d8ddc280d5ed323b7f06504dbb51c523b690116/torchmetrics-1.6.1-py3-none-any.whl", hash = "sha256:c3090aa2341129e994c0a659abb6d4140ae75169a6ebf45bffc16c5cb553b38e", size = 927305 },
+]
+
+[[package]]
+name = "torchsurv"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+    { name = "torch" },
+    { name = "torchmetrics" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/64/b8/818358e969fd364ace237ee4dad0979abfeb80da78a7f851ed280e65ba41/torchsurv-0.1.4.tar.gz", hash = "sha256:47247173d4092140e841b0688308dc26ac4b203f6396438d2843ee8ede1304ca", size = 61311 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/b1/22b56a7a6aa1c245a1f18779e13b872b4b72b6a796bd28af0137b6c975e8/torchsurv-0.1.4-py3-none-any.whl", hash = "sha256:0c8b40129ce051da50272c2ad566d2f312b852934318c2d83c65d3e0c15c648c", size = 52330 },
 ]
 
 [[package]]
