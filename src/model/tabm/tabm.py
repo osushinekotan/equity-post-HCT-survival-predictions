@@ -1,13 +1,14 @@
 import math
 from collections.abc import Callable
 
+import category_encoders as ce
 import numpy as np
 import pandas as pd
 import rtdl_num_embeddings
 import torch
 
 # from schedulefree import AdamWScheduleFree
-from sklearn.preprocessing import MinMaxScaler
+from sklearn import preprocessing
 
 # from tqdm import tqdm
 from .tabm_reference import Model, make_parameter_groups
@@ -234,12 +235,7 @@ class TabMRegressor:
 
         return y_pred
 
-    def _preprocess_data(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        training: bool,
-    ):
+    def _preprocess_data(self, X: pd.DataFrame, y: pd.Series, training: bool):
         # PICK NON-CONSTANT COLUMNS.
         if training:
             self._non_constant_columns = X.columns[X.nunique() > 1]
@@ -247,24 +243,26 @@ class TabMRegressor:
         X = X[self._non_constant_columns]
 
         # SEPARATE CATEGORICAL & CONTINUOUS FEATURES.
-        X_cat = X[self.categorical_features].to_numpy()
+        X_cat = X[self.categorical_features].astype(str)
         X_cont = X.drop(columns=self.categorical_features).to_numpy()
 
+        if training:
+            self._categorical_encoders = ce.OrdinalEncoder().fit(X_cat)
+
         # ENCODE CATEGORICAL FEATURES.
-        cat_cardinalities = [X[col].nunique() for col in self.categorical_features]
+        X_cat = self._categorical_encoders.transform(X_cat).to_numpy()
+        X_cat[X_cat == -1] = 0  # -1 -> 0
+        cat_cardinalities = [X_cat[:, i].max() for i in range(X_cat.shape[1])]
 
         # NORMALIZE TARGETS.
         if training:
             self._target_mean = y.mean()
             self._target_std = y.std()
-
             y = (y - self._target_mean) / self._target_std
 
         # SCALE CONTINUOUS FEATURES.
         if training:
-            noise = np.random.default_rng(0).normal(0.0, 1e-5, X_cont.shape).astype(X_cont.dtype)
-            self._cont_feature_preprocessor = MinMaxScaler().fit(X_cont + noise)
-
+            self._cont_feature_preprocessor = preprocessing.StandardScaler().fit(X_cont)
         X_cont = self._cont_feature_preprocessor.transform(X_cont)
 
         # CONVERT TO TENSORS.

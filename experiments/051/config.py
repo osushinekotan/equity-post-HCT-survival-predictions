@@ -5,7 +5,7 @@ EXP_NAME = "051"
 
 N_SPLITS = 10
 SEED = 42
-VALID_RATIO: float | None = 0.1
+VALID_RATIO: float | None = None
 
 
 FEATURE_PREFIX = "f_"
