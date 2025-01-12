@@ -1,5 +1,8 @@
 import math
+import os
+import random
 from collections.abc import Callable
+from pathlib import Path
 
 import category_encoders as ce
 import numpy as np
@@ -9,9 +12,20 @@ import torch
 
 # from schedulefree import AdamWScheduleFree
 from sklearn import preprocessing
+from sklearn.metrics import mean_squared_error
 
 # from tqdm import tqdm
 from .tabm_reference import Model, make_parameter_groups
+
+
+def seed_everything(seed: int) -> None:
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
 
 
 # https://www.kaggle.com/datasets/jsday96/mcts-tabm-models/data?select=TabMRegressor.py
@@ -31,10 +45,12 @@ class TabMRegressor:
         batch_size: int = 32,
         compile_model: bool = False,
         device: str | None = "cuda:0",
-        random_state: int = 0,
+        random_state: int | None = 42,
         verbose: bool = True,
         categorical_features: list[str] | None = None,
-        eval_metric: str | Callable = "mse",
+        eval_metric: Callable | None = None,
+        loss_fn: torch.nn.Module | None = None,
+        checkpoint_path: str | Path | None = Path("best_model.pth"),
     ):
         self.arch_type = arch_type
         self.backbone = backbone or {"type": "MLP", "n_blocks": 3, "d_block": 512, "dropout": 0.1}
@@ -52,12 +68,17 @@ class TabMRegressor:
         self.random_state = random_state
         self.verbose = verbose
         self.categorical_features = categorical_features
-        self.eval_metric = eval_metric
+        self.eval_metric = eval_metric or mean_squared_error
+        self.loss_fn = loss_fn
+        self.checkpoint_path = Path(checkpoint_path)
+
+        self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        seed_everything(random_state)
 
     def fit(self, X: pd.DataFrame, y: np.array, eval_set: tuple[pd.DataFrame, np.array]):  # noqa
         # PREPROCESS DATA.
         X_cat_train, X_cont_train, cat_cardinalities, y_train = self._preprocess_data(X, y, training=True)
-        X_cat_val, X_cont_val, _, y_val = self._preprocess_data(eval_set[0], eval_set[1], training=False)
+        # X_cat_val, X_cont_val, _, y_val = self._preprocess_data(eval_set[0], eval_set[1], training=False)
 
         # CREATE MODEL & TRAINING ALGO.
         bins = (
@@ -90,7 +111,7 @@ class TabMRegressor:
         if self.compile_model:
             self.model = torch.compile(self.model)
 
-        loss_fn = torch.nn.MSELoss().to(self.device)
+        loss_fn = self.loss_fn.to(self.device)
 
         # TRAIN & TEST MODEL.
         best = {
@@ -126,71 +147,45 @@ class TabMRegressor:
                 if self.clip_grad_norm:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
                 optimizer.step()
-
                 train_losses.append(loss.item())
 
             # EVALUATE.
-            self.model.eval()
-            val_losses = []
-            val_y_preds = []
-            val_y_targets = []
-            with torch.no_grad():
-                for batch_idx in torch.arange(0, len(y_val), self.batch_size, device=self.device):
-                    y_pred = (
-                        self.model(
-                            X_cont_val[batch_idx : batch_idx + self.batch_size],
-                            X_cat_val[batch_idx : batch_idx + self.batch_size],
-                        )
-                        .squeeze(-1)
-                        .float()
-                    )
-
-                    loss = loss_fn(
-                        y_pred.flatten(0, 1),
-                        y_val[batch_idx : batch_idx + self.batch_size].repeat_interleave(self.k),
-                    )
-                    val_losses.append(loss.item())
-                    val_y_preds.append(y_pred.cpu().numpy())
-                    val_y_targets.append(y_val[batch_idx : batch_idx + self.batch_size].cpu().numpy())
+            val_y_preds = self.predict(eval_set[0], batch_size=self.batch_size)
+            val_y_targets = eval_set[1]
 
             # PRINT INFO.
             mean_train_loss = np.mean(train_losses)
-            mean_val_loss = np.mean(val_losses)
 
-            # NOTE: prod std and plus mean?
-            # (n_samples, k) -> (n_samples,)
-            val_y_preds = np.concatenate(val_y_preds).mean(axis=1) * self._target_std + self._target_mean
-            val_y_targets = np.concatenate(val_y_targets)
-
-            if self.eval_metric == "mse":
-                val_score = -mean_val_loss
-            else:
-                val_score = self.eval_metric(y_true=val_y_targets, y_pred=val_y_preds)
+            val_score = self.eval_metric(y_true=val_y_targets, y_pred=val_y_preds)
+            val_loss = self.loss_fn(torch.tensor(val_y_preds), torch.tensor(val_y_targets)).item()
 
             update_best = val_score > best["eval_score"]
             if update_best:
                 best_score = val_score
+                best_epoch = epoch
             else:
                 best_score = best["eval_score"]
+                best_epoch = best["epoch"]
 
             if self.verbose:
                 if not header_printed:
                     print(
-                        f"{'Epoch':<10} | {'Train Loss':<12} | {'Val Loss':<10} | {'Val Score':<10} | {'Best Score':<10}"
+                        f"{'Epoch':<10} | {'Train Loss':<12} | {'Val Loss':<10} | {'Val Score':<10} | {'Best Score':<10} | {'Best Epoch':<10} |"
                     )
-                    print("-" * 60)
+                    print("-" * 90)
                     header_printed = True
 
                 print(
-                    f"{epoch:<10} | {mean_train_loss:<12.6f} | {mean_val_loss:<10.6f} | {val_score:<10.6f} | {best_score:<10.6f}"
+                    f"{epoch:<10} | {mean_train_loss:<12.6f} | {val_loss:<10.6f} | {val_score:<10.6f} | {best_score:<10.6f} | {best_epoch:<10} |"
                 )
 
             # COMPARE TO BEST.
             if update_best:
                 best["epoch"] = epoch
-                best["eval_loss"] = mean_val_loss
+                best["eval_loss"] = val_loss
                 best["eval_score"] = val_score
-                best["model_state_dict"] = self.model.state_dict()
+                # save to checkpoint
+                torch.save(obj=self.model.state_dict(), f=self.checkpoint_path)
                 remaining_patience = self.patience
 
                 # if self.verbose:
@@ -203,7 +198,10 @@ class TabMRegressor:
                 break
 
         # RESTORE BEST MODEL.
-        self.model.load_state_dict(best["model_state_dict"])
+        self.model.load_state_dict(torch.load(self.checkpoint_path))
+        best_pred = self.predict(eval_set[0], batch_size=self.batch_size)
+        best_score = self.eval_metric(y_true=eval_set[1], y_pred=best_pred)
+        print(f"Best score: {best_score}")
 
     def predict(self, X: pd.DataFrame, batch_size: int | None = 8096) -> np.ndarray:
         # PREPROCESS DATA.
@@ -227,12 +225,8 @@ class TabMRegressor:
 
         y_pred = np.concatenate(y_pred)
 
-        # DENORMALIZE TARGETS.
-        y_pred = y_pred * self._target_std + self._target_mean
-
         # COMPUTE ENSEMBLE MEAN.
         y_pred = np.mean(y_pred, axis=1)
-
         return y_pred
 
     def _preprocess_data(self, X: pd.DataFrame, y: pd.Series, training: bool):
@@ -253,12 +247,6 @@ class TabMRegressor:
         X_cat = self._categorical_encoders.transform(X_cat).to_numpy()
         X_cat[X_cat == -1] = 0  # -1 -> 0
         cat_cardinalities = [X_cat[:, i].max() for i in range(X_cat.shape[1])]
-
-        # NORMALIZE TARGETS.
-        if training:
-            self._target_mean = y.mean()
-            self._target_std = y.std()
-            y = (y - self._target_mean) / self._target_std
 
         # SCALE CONTINUOUS FEATURES.
         if training:
