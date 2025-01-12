@@ -15,7 +15,10 @@ from scipy.optimize import minimize
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
+from tabpfn import TabPFNRegressor
 from xgboost import XGBRegressor
+
+from .tabm.tabm import TabMRegressor
 
 
 class BaseWrapper:
@@ -487,9 +490,6 @@ class WeightedAverageModelWrapper(BaseWrapper):
         return None
 
 
-from tabpfn import TabPFNRegressor
-
-
 class TabPFNRegressorWapper(BaseWrapper):
     def __init__(
         self,
@@ -521,9 +521,6 @@ class TabPFNRegressorWapper(BaseWrapper):
     @property
     def feature_importances_(self) -> Any:
         return None
-
-
-from .tabm.tabm import TabMRegressor
 
 
 class TabMRegressorWrapper(BaseWrapper):
