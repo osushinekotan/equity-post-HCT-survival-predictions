@@ -29,7 +29,7 @@ def seed_everything(seed: int) -> None:
 
 
 # https://www.kaggle.com/datasets/jsday96/mcts-tabm-models/data?select=TabMRegressor.py
-class TabMRegressor:
+class TabMRegressor:  # base class
     def __init__(
         self,
         arch_type: str = "tabm-mini",
@@ -106,7 +106,16 @@ class TabMRegressor:
             k=self.k,
         ).to(self.device)
         optimizer = torch.optim.AdamW(
-            make_parameter_groups(self.model), lr=self.learning_rate, weight_decay=self.weight_decay
+            make_parameter_groups(self.model),
+            lr=self.learning_rate,
+            weight_decay=self.weight_decay,
+        )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+            factor=0.5,
+            patience=5,
+            verbose=True,
         )
         if self.compile_model:
             self.model = torch.compile(self.model)
@@ -158,6 +167,7 @@ class TabMRegressor:
 
             val_score = self.eval_metric(y_true=val_y_targets, y_pred=val_y_preds)
             val_loss = self.loss_fn(torch.tensor(val_y_preds), torch.tensor(val_y_targets)).item()
+            scheduler.step(val_score)  # update learning rate
 
             update_best = val_score > best["eval_score"]
             if update_best:
