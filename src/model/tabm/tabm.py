@@ -255,7 +255,7 @@ class TabMRegressor:  # base class
 
         # ENCODE CATEGORICAL FEATURES.
         X_cat = self._categorical_encoders.transform(X_cat).to_numpy()
-        X_cat[X_cat == -1] = 0  # -1 -> 0
+        X_cat[X_cat < 0] = 0  # -1,-2 -> 0
         cat_cardinalities = [X_cat[:, i].max() for i in range(X_cat.shape[1])]
 
         # SCALE CONTINUOUS FEATURES.
