@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 EXP_NAME = "059"
-EXTRA_TARGET_CSV = "target_003_target.csv"
+EXTRA_TARGET_CSV = "target_001_target.csv"
 
-N_SPLITS = 5
+N_SPLITS = 10
 SEED = 42
-VALID_RATIO: float | None = 0.2
+VALID_RATIO: float | None = None
 
 
 FEATURE_PREFIX = "f_"
