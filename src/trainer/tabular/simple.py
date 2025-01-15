@@ -116,6 +116,35 @@ def single_train_fn(
     return va_result_df, va_scores, trained_models
 
 
+def single_inference_fn_v2(
+    models: list[BaseWrapper],
+    features_df: pl.DataFrame,
+    feature_names: list[str],
+) -> pl.DataFrame:
+    te_preds = []
+
+    te_x = features_df.select(feature_names).to_numpy()
+    try:
+        for model in models:
+            te_pred = model.predict(te_x)
+            try:
+                if te_pred.shape[1] == 1:
+                    te_pred = te_pred.reshape(-1)
+            except IndexError:
+                pass
+            te_preds.append(te_pred)
+    except Exception as e:
+        logger.error(f"   - ❌ Failed to load model: {e}")
+
+    te_pred_ave = np.mean(te_preds, axis=0)
+
+    # Save prediction
+    excepted_features = [f for f in features_df.columns if f not in feature_names]
+    te_result_df = features_df.select(excepted_features).with_columns(pl.Series("pred", te_pred_ave))
+
+    return te_result_df
+
+
 def single_inference_fn(
     model: BaseWrapper,
     features_df: pl.DataFrame,
