@@ -1,13 +1,11 @@
 import os
 from pathlib import Path
 
-EXP_NAME = "target_006"
-EXTRA_TARGET_CSV = "target_001_target.csv"
+EXP_NAME = "064"
+EXTRA_TARGET_CSV = "target_006_target.csv"
 
-N_SPLITS = 4
+N_SPLITS = 10
 SEED = 42
-SEEDS = [0, 1, 2, 3, 4]
-
 VALID_RATIO: float | None = None
 
 
