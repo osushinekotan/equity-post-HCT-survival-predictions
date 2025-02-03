@@ -4,8 +4,8 @@ from pathlib import Path
 EXP_NAME = "101"
 
 N_SPLITS = 10
-SEED = 42
-SEEDS = [SEED + i for i in range(3)]
+SEED = 1
+SEEDS = [SEED + i for i in range(5)]
 
 VALID_RATIO: float | None = None
 
