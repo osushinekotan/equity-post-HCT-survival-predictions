@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 EXP_NAME = "101"
@@ -95,15 +96,12 @@ META_COLS = [
 IS_KAGGLE_ENV = os.getenv("KAGGLE_DATA_PROXY_TOKEN") is not None
 KAGGLE_COMPETITION_NAME = os.getenv("KAGGLE_COMPETITION_NAME", "equity-post-HCT-survival-predictions")
 KAGGLE_USERNAME = os.getenv("KAGGLE_USERNAME", "mst8823")
+EXP_DIR = Path(sys.modules[__name__].__file__).resolve().parent
 
 if not IS_KAGGLE_ENV:
-    import sys
-    from pathlib import Path
-
     import rootutils
 
-    exp_dir = Path(sys.modules[__name__].__file__).resolve().parent
-    sys.path.append(str(exp_dir))  # add pythonpath for the current experiment
+    sys.path.append(str(EXP_DIR))  # add pythonpath for the current experiment
 
     ROOT_DIR = rootutils.setup_root(
         ".",
@@ -122,6 +120,8 @@ if not IS_KAGGLE_ENV:
     ARTIFACTS_HANDLE = f"{KAGGLE_USERNAME}/{KAGGLE_COMPETITION_NAME}-artifacts/other/{EXP_NAME}"
     CODES_HANDLE = f"{KAGGLE_USERNAME}/{KAGGLE_COMPETITION_NAME}-codes"
 else:
+    sys.path.append(str(EXP_DIR))  # add pythonpath for the current experiment
+
     ROOT_DIR = Path("/kaggle/working")
     INPUT_DIR = Path("/kaggle/input")
     # 当該 code 以外の生成物が格納されている場所 (Model として使用できる)  ARTIFACT_DIR / EXP_NAME / 1 でアクセス可能

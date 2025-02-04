@@ -12,6 +12,8 @@ feature_names = sorted([x for x in features_df.columns if x.startswith(config.FE
 cat_features = [x for x in feature_names if x.startswith(f"{config.FEATURE_PREFIX}c_")]
 
 te_result_df = pl.DataFrame()
+out_dir = config.OUTPUT_DIR / config.EXP_NAME if config.IS_KAGGLE_ENV else config.OUTPUT_DIR
+
 for seed in config.SEEDS:
     name = f"cat_{seed}"
 
@@ -21,7 +23,7 @@ for seed in config.SEEDS:
         feature_names=feature_names,
         model_dir=config.ARTIFACT_EXP_DIR(),
         inference_folds=list(range(config.N_SPLITS)),
-        out_dir=config.OUTPUT_DIR,
+        out_dir=out_dir,
     )
     te_result_df = pl.concat([te_result_df, _te_result_df], how="diagonal_relaxed")
 
@@ -36,8 +38,6 @@ te_result_agg_df = (
 print(config.ARTIFACT_EXP_DIR(), config.ARTIFACT_EXP_DIR().exists())
 print(te_result_agg_df["pred"].to_list())
 
-te_result_agg_df.write_csv(config.OUTPUT_DIR / "te_result.csv")
-
-te_result_agg_df.select([config.ID_COL, "pred"]).rename({"pred": "prediction"}).write_csv(
-    config.OUTPUT_DIR / "submission.csv"
-)
+te_result_agg_df.write_csv(out_dir / "te_result.csv")
+# make submission
+te_result_agg_df.select([config.ID_COL, "pred"]).rename({"pred": "prediction"}).write_csv(out_dir / "submission.csv")
