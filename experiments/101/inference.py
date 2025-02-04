@@ -39,5 +39,8 @@ print(config.ARTIFACT_EXP_DIR(), config.ARTIFACT_EXP_DIR().exists())
 print(te_result_agg_df["pred"].to_list())
 
 te_result_agg_df.write_csv(out_dir / "te_result.csv")
+
 # make submission
-te_result_agg_df.select([config.ID_COL, "pred"]).rename({"pred": "prediction"}).write_csv(out_dir / "submission.csv")
+te_result_agg_df.select([config.ID_COL, "pred"]).rename({"pred": "prediction"}).write_csv(
+    config.OUTPUT_DIR / "submission.csv"
+)
