@@ -34,7 +34,7 @@ if __name__ == "__main__":
             ),
             "artifacts": lambda exp_name: model_upload(
                 handle=f"{BASE_ARTIFACTS_HANDLE}/{exp_name}",
-                local_model_dir=OUTPUT_DIR / exp_name / "1",  # output dir に存在する artifact をアップロード
+                local_model_dir=OUTPUT_DIR / str(exp_name) / "1",  # output dir に存在する artifact をアップロード
                 update=False,
             ),
         }
