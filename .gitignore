@@ -162,3 +162,4 @@ cython_debug/
 data/*
 !data/.gitkeep
 catboost_info/
+lightning_logs/
