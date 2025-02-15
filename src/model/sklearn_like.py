@@ -542,12 +542,13 @@ class TabMRegressorWrapper(BaseWrapper):
         tr_y: NDArray,
         va_x: NDArray,
         va_y: NDArray,
+        tr_w: NDArray | None = None,
         **kwargs,
     ) -> None:
         tr_x = pd.DataFrame(tr_x, columns=self.feature_names)
         va_x = pd.DataFrame(va_x, columns=self.feature_names)
         self.model.eval_metric = self.eval_metric
-        self.model.fit(X=tr_x, y=tr_y, eval_set=(va_x, va_y))
+        self.model.fit(X=tr_x, y=tr_y, eval_set=(va_x, va_y), sample_weight=tr_w)
         self.fitted = True
 
     def predict(self, X: NDArray) -> NDArray:  # noqa

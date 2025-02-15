@@ -51,6 +51,8 @@ class TabMRegressor:  # base class
         eval_metric: Callable | None = None,
         loss_fn: torch.nn.Module | None = None,
         checkpoint_path: str | Path | None = Path("best_model.pth"),
+        scaling_method: str = "standard",
+        reduce_lr_patience: int = 5,
     ):
         self.arch_type = arch_type
         self.backbone = backbone or {"type": "MLP", "n_blocks": 3, "d_block": 512, "dropout": 0.1}
@@ -71,14 +73,25 @@ class TabMRegressor:  # base class
         self.eval_metric = eval_metric or mean_squared_error
         self.loss_fn = loss_fn
         self.checkpoint_path = Path(checkpoint_path)
+        self.reduce_lr_patience = reduce_lr_patience
 
         self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        self.scaling_method = scaling_method
         seed_everything(random_state)
 
-    def fit(self, X: pd.DataFrame, y: np.array, eval_set: tuple[pd.DataFrame, np.array]):  # noqa
+    def fit(  # noqa: C901
+        self,
+        X: pd.DataFrame,
+        y: np.ndarray,
+        eval_set: tuple[pd.DataFrame, np.ndarray],
+        sample_weight: np.ndarray | None = None,
+    ):
         # PREPROCESS DATA.
         X_cat_train, X_cont_train, cat_cardinalities, y_train = self._preprocess_data(X, y, training=True)
-        # X_cat_val, X_cont_val, _, y_val = self._preprocess_data(eval_set[0], eval_set[1], training=False)
+
+        # sample_weight が指定されていればテンソルに変換
+        if sample_weight is not None:
+            sample_weight = torch.tensor(sample_weight, dtype=torch.float32, device=self.device)
 
         # CREATE MODEL & TRAINING ALGO.
         bins = (
@@ -114,13 +127,17 @@ class TabMRegressor:  # base class
             optimizer,
             mode="max",
             factor=0.5,
-            patience=5,
+            patience=self.reduce_lr_patience,
             verbose=True,
+            min_lr=1e-10,
         )
         if self.compile_model:
             self.model = torch.compile(self.model)
 
-        loss_fn = self.loss_fn.to(self.device)
+        try:
+            loss_fn = self.loss_fn.to(self.device)
+        except Exception:
+            loss_fn = self.loss_fn
 
         # TRAIN & TEST MODEL.
         best = {
@@ -130,14 +147,12 @@ class TabMRegressor:  # base class
             "eval_score": -math.inf,
         }
         remaining_patience = self.patience
-        # epoch_size = math.ceil(len(X) / self.batch_size)
         header_printed = False
         for epoch in range(self.max_epochs):
             # TRAIN.
             optimizer.zero_grad()
             train_losses = []
             progress_bar = torch.randperm(len(y_train), device=self.device).split(self.batch_size)
-            # progress_bar = tqdm(progress_bar, desc=f"Epoch {epoch}", total=epoch_size) if self.verbose else progress_bar
             for batch_idx in progress_bar:
                 self.model.train()
 
@@ -151,7 +166,20 @@ class TabMRegressor:  # base class
                         .float()
                     )
 
-                loss = loss_fn(y_pred.flatten(0, 1), y_train[batch_idx].repeat_interleave(self.k))
+                # ターゲットは各サンプルごとに k 回繰り返す
+                y_target = y_train[batch_idx].repeat_interleave(self.k)
+                y_pred_flat = y_pred.flatten(0, 1)
+
+                # sample_weight が指定されている場合は、各サンプルに重みを適用
+                if sample_weight is not None:
+                    # 現在のバッチに対応する重みを k 回繰り返す
+                    batch_weights = sample_weight[batch_idx].repeat_interleave(self.k)
+                    # loss_fn が reduction 引数をサポートしている前提で、個別の損失値を計算
+                    loss_values = loss_fn(y_pred_flat, y_target, reduction="none")
+                    loss = (loss_values * batch_weights).mean()
+                else:
+                    loss = loss_fn(y_pred_flat, y_target)
+
                 loss.backward()
                 if self.clip_grad_norm:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
@@ -164,9 +192,8 @@ class TabMRegressor:  # base class
 
             # PRINT INFO.
             mean_train_loss = np.mean(train_losses)
-
             val_score = self.eval_metric(y_true=val_y_targets, y_pred=val_y_preds)
-            val_loss = self.loss_fn(torch.tensor(val_y_preds), torch.tensor(val_y_targets)).item()
+            val_loss = loss_fn(torch.tensor(val_y_preds), torch.tensor(val_y_targets)).item()
             scheduler.step(val_score)  # update learning rate
 
             update_best = val_score > best["eval_score"]
@@ -197,9 +224,6 @@ class TabMRegressor:  # base class
                 # save to checkpoint
                 torch.save(obj=self.model.state_dict(), f=self.checkpoint_path)
                 remaining_patience = self.patience
-
-                # if self.verbose:
-                #     print(f"🎉 New best model found! | Epoch: {epoch} | Best Score: {val_score}")
             else:
                 remaining_patience -= 1
 
@@ -260,7 +284,14 @@ class TabMRegressor:  # base class
 
         # SCALE CONTINUOUS FEATURES.
         if training:
-            self._cont_feature_preprocessor = preprocessing.StandardScaler().fit(X_cont)
+            if self.scaling_method == "standard":
+                self._cont_feature_preprocessor = preprocessing.StandardScaler().fit(X_cont)
+            elif self.scaling_method == "minmax":
+                self._cont_feature_preprocessor = preprocessing.MinMaxScaler().fit(X_cont)
+            elif self.scaling_method == "robust":
+                self._cont_feature_preprocessor = preprocessing.RobustScaler().fit(X_cont)
+            else:
+                raise ValueError(f"Unknown scaling method: {self.scaling_method}")
         X_cont = self._cont_feature_preprocessor.transform(X_cont)
 
         # CONVERT TO TENSORS.
