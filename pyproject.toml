@@ -20,6 +20,7 @@ dependencies = [
     "pyarrow>=18.1.0",
     "pytorch-tabular>=1.1.1",
     "rtdl-num-embeddings>=0.0.11",
+    "runpynb>=0.3.0",
     "schedulefree>=1.4",
     "scikit-learn>=1.2.2",
     "scikit-survival>=0.21.0",
