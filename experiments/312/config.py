@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-EXP_NAME = "300"
+EXP_NAME = "312"
 
 N_SPLITS = 7
 SEED = 1
