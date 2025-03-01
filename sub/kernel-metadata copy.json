@@ -1,0 +1,26 @@
+{
+  "id": "mst8823/equity-post-HCT-survival-predictions-sub",
+  "title": "equity-post-HCT-survival-predictions-sub",
+  "code_file": "code.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": ["mst8823/equity-post-HCT-survival-predictions-codes"],
+  "competition_sources": ["equity-post-HCT-survival-predictions"],
+  "kernel_sources": ["mst8823/equity-post-HCT-survival-predictions-deps"],
+  "model_sources": [
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/301/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/302/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/303/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/304/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/305/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/306/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/325/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/326/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/327/1",
+    "mst8823/equity-post-HCT-survival-predictions-artifacts/other/335_ensemble/1"
+  ]
+}
