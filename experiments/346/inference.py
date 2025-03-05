@@ -93,7 +93,7 @@ te_result_agg_df = te_result_agg_df.join(
 )
 print(te_result_agg_df)
 
-best_params = {"threshold": 0.8061224489795917, "adjustment": 0.1, "score": 0.6946812559145233}
+best_params = {"threshold": 0.8061224489795917, "adjustment": 0.09591836734693879, "score": 0.6946843832311068}
 print(best_params)
 
 # post process
