@@ -31,7 +31,7 @@ My final submission consisted of seed averaging and stacking ensemble methods.
 - 3rd layer (5 seed averaging)
   - Ridge
 
-## score
+### score
 
 - cv: 0.695
 - Public: 0.694
