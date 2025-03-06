@@ -8,41 +8,7 @@ My solution primarily focused on target engineering and sample weight engineerin
 For sample weight engineering, I developed custom weights that vary according to `efs` and `efs_time`, along with a half-weight approach that assigns 0.5 when efs=0.
 My final submission consisted of seed averaging and stacking ensemble methods.
 
-### target engineering
-
-$
-\text{target} = \exp(\frac{\log(P(event))}{SF_e} + KM(t))
-$
-
-Where:
-
-- $KM(t)$: Kaplan-Meier survival probability
-- $P(event)$: Event probability
-- $SF_e$: Scaling factor dependent on event status $e \in \{0,1\}$
-
-$
-SF_e = \frac{\min(\log(P(event)))}{(0.0 - \min(KM(t)))}
-$
-
-### sample weight
-
-$
-\text{weight} = 
-\begin{cases}
-(1 - \frac{t - t_{min,0}}{t_{max,0} - t_{min,0}}) \cdot (w_{max,0} - w_{min,0}) + w_{min,0} & \text{if } event = 0 \\
-\frac{t - t_{min,1}}{t_{max,1} - t_{min,1}} \cdot (w_{max,1} - w_{min,1}) + w_{min,1} & \text{if } event = 1
-\end{cases}
-$
-
-Where:
-
-- $t$: Sample survival time (`efs_time`)
-- $t_{min,e}$: Minimum survival time for event status $e \in \{0,1\}$
-- $t_{max,e}$: Maximum survival time for event status $e \in \{0,1\}$
-- $w_{min,0} = 0.01$: Lower weight bound when event = 0
-- $w_{max,0} = 0.5$: Upper weight bound when event = 0
-- $w_{min,1} = 1.0$: Lower weight bound when event = 1
-- $w_{max,1} = 1.5$: Upper weight bound when event = 1
+![alt text](solution.png)
 
 ### ensemble
 
