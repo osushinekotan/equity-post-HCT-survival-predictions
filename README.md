@@ -10,6 +10,14 @@ My final submission consisted of seed averaging and stacking ensemble methods.
 
 ![alt text](solution.png)
 
+### efs prediction
+
+- 1st layer
+  - Catboost (5 seed averaging)
+  - LightGBM (5 seed averaging)
+- 2nd layer
+  - mean ensemble
+
 ### ensemble
 
 - 1st layer (5 seed averaging)
